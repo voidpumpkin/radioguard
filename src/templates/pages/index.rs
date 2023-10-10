@@ -1,12 +1,15 @@
 use askama::Template;
+use axum::extract::State;
 use axum::response::Html;
+use sqlx::Pool;
+use sqlx::Sqlite;
 
 #[derive(Template)]
 #[template(path = "templates/pages/index.jinja")]
-pub struct HelloTemplate<'a> {
-    pub name: &'a str,
+struct TemplateInstance<'a> {
+    name: &'a str,
 }
 
-pub async fn handle_page_index() -> Html<String> {
-    Html(HelloTemplate { name: "world" }.render().unwrap())
+pub async fn handle_page_index(State(db): State<Pool<Sqlite>>) -> Html<String> {
+    Html(TemplateInstance { name: "wor1d" }.render().unwrap())
 }

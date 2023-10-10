@@ -14,10 +14,20 @@
 
 <body>
     <h1>Hello, {{ name }}!</h1>
-    <button hx-post="/clicked" hx-swap="outerHTML"
-        class="inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-center text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900">
-        Click Me
+    <button hx-get="/tag_groups" hx-swap="innerHTML" hx-target="#tag_groups" hx-trigger="load" class="btn">
+        Load Tags
     </button>
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody id="tag_groups"></tbody>
+        </table>
+    </div>
 </body>
 
 </html>

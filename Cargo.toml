@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+sqlx = { version = "0.7.2", features = ["sqlite", "runtime-tokio", "migrate"] }
 anyhow = "1.0.75"
 askama = "0.12.1"
 axum = "0.6.20"
 tokio = { version = "1.33.0", features = ["full"] }
+chrono = "0.4.31"
