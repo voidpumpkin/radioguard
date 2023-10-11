@@ -20,7 +20,8 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/", get(handle_page_index))
-        .with_state(db);
+        .with_state(db)
+        .nest("/dist", axum_static::static_router("dist"));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("listening on http://{addr}");
