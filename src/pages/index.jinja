@@ -13,21 +13,12 @@
 </head>
 
 <body>
-    <h1>Hello, {{ name }}!</h1>
-    <button hx-get="/tag_groups" hx-swap="innerHTML" hx-target="#tag_groups" hx-trigger="load" class="btn">
-        Load Tags
-    </button>
-    <div class="overflow-x-auto">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Name</th>
-                </tr>
-            </thead>
-            <tbody id="tag_groups"></tbody>
-        </table>
-    </div>
+    <input type="text" placeholder="Type here" class="input w-full max-w-xs" list="runs" />
+    <datalist id="runs">
+        {% for run_date_time in run_date_times %}
+        <option>{{run_date_time}}</option>
+        {% endfor %}
+    </datalist>
 </body>
 
 </html>

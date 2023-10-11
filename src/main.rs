@@ -1,12 +1,12 @@
 pub mod models;
-pub mod templates;
+pub mod pages;
 
 use axum::{routing::get, Router};
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
 
-use crate::templates::pages::index::handle_page_index;
+use crate::pages::index::handle_page_index;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -20,7 +20,6 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/", get(handle_page_index))
-        // .route("/tag_groups", get(handle_component_tag_groups))
         .with_state(db);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
