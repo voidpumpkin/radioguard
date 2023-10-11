@@ -10,6 +10,6 @@ struct TemplateInstance<'a> {
     name: &'a str,
 }
 
-pub async fn handle_page_index(State(db): State<Pool<Sqlite>>) -> Html<String> {
+pub async fn handle_page_index(State(_db): State<Pool<Sqlite>>) -> Html<String> {
     Html(TemplateInstance { name: "wor1d" }.render().unwrap())
 }

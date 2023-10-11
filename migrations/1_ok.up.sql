@@ -1,23 +1,55 @@
-CREATE TABLE snapshot(
+CREATE TABLE run(
    id INTEGER PRIMARY KEY AUTOINCREMENT,
-   data_uri TEXT NOT NULL,
 -- YYYY-MM-DD HH:MM:SS
    created_at TEXT NOT NULL
 );
 
-CREATE TABLE tag_group(
+CREATE TABLE test_case(
    id INTEGER PRIMARY KEY AUTOINCREMENT,
-   name TEXT NOT NULL
+   run_id INTEGER NOT NULL,
+   name TEXT NOT NULL,
+-- YYYY-MM-DD HH:MM:SS
+   created_at TEXT NOT NULL,
+   FOREIGN KEY(run_id) REFERENCES run(id)
+);
+
+CREATE TABLE step(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   data_uri TEXT NOT NULL,
+   test_case_id INTEGER NOT NULL,
+   parent_step_id INTEGER,
+   name TEXT NOT NULL,
+-- YYYY-MM-DD HH:MM:SS
+   created_at TEXT NOT NULL,
+   FOREIGN KEY(test_case_id) REFERENCES test_case(id),
+   FOREIGN KEY(parent_step_id) REFERENCES step(id)
 );
 
 CREATE TABLE tag(
    id INTEGER PRIMARY KEY AUTOINCREMENT,
-   tag_group_id INTEGER NOT NULL,
-   value TEXT
+   value TEXT NOT NULL
 );
 
-CREATE TABLE snapshot_tag(
+CREATE TABLE step_tag(
    id INTEGER PRIMARY KEY AUTOINCREMENT,
-   snapshot_id INTEGER NOT NULL,
-   tag_id INTEGER NOT NULL
+   step_id INTEGER NOT NULL,
+   tag_id INTEGER NOT NULL,
+   FOREIGN KEY(step_id) REFERENCES step(id),
+   FOREIGN KEY(tag_id) REFERENCES tag(id)
+);
+
+CREATE TABLE test_case_tag(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   test_case_id INTEGER NOT NULL,
+   tag_id INTEGER NOT NULL,
+   FOREIGN KEY(test_case_id) REFERENCES test_case(id),
+   FOREIGN KEY(tag_id) REFERENCES tag(id)
+);
+
+CREATE TABLE run_tag(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   run_id INTEGER NOT NULL,
+   tag_id INTEGER NOT NULL,
+   FOREIGN KEY(run_id) REFERENCES run(id),
+   FOREIGN KEY(tag_id) REFERENCES tag(id)
 );
