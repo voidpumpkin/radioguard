@@ -5,23 +5,53 @@ use chrono::NaiveDateTime;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
+use crate::models::run::Run;
+use crate::models::tag::Tag;
+
 #[derive(Template)]
 #[template(path = "pages/index.jinja")]
 struct TemplateInstance {
-    run_date_times: Vec<NaiveDateTime>,
+    runs: Vec<Run>,
 }
 
 pub async fn handle_page_index(State(db): State<Pool<Sqlite>>) -> Html<String> {
-    let run_date_times = sqlx::query!(
+    let runs_untagged = sqlx::query!(
         "
-SELECT created_at
+SELECT *
 FROM run
         "
     )
-    .map(|record| NaiveDateTime::parse_from_str(&record.created_at, "%F %T").unwrap())
+    .map(|row| (row.id, row.created_at))
     .fetch_all(&db)
     .await
     .unwrap();
 
-    Html(TemplateInstance { run_date_times }.render().unwrap())
+    let mut runs = vec![];
+
+    for run in runs_untagged.iter() {
+        let tags = sqlx::query!(
+            "
+SELECT tag.*
+FROM tag
+JOIN run_tag ON run_tag.tag_id = tag.id
+WHERE run_id = ?;
+            ",
+            run.0
+        )
+        .map(|row| Tag {
+            id: row.id,
+            value: row.value,
+        })
+        .fetch_all(&db)
+        .await
+        .unwrap();
+
+        runs.push(Run {
+            id: run.0,
+            created_at: NaiveDateTime::parse_from_str(&run.1, "%F %T").unwrap(),
+            tags,
+        })
+    }
+
+    Html(TemplateInstance { runs }.render().unwrap())
 }
