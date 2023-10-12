@@ -14,20 +14,22 @@
                 <tbody>
                     {% for run in runs %}
                     <tr>
-                        <th>{{run.id}}</th>
-                        <th>{{run.created_at}}</th>
+                        <th>{{run.0.id}}</th>
+                        <th>{{run.0.created_at}}</th>
                         <th>
-                            {% for tag in run.tags %}
+                            {% for tag in run.0.tags %}
                             <div class="badge badge-outline">{{tag.value}}</div>
                             {% endfor %}
                         </th>
-                        <th><a href="?compare_left_run={{run.id}}" class="btn"><svg xmlns="http://www.w3.org/2000/svg"
-                                    fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                    class="w-6 h-6">
+                        <th>
+                            <a href="?{{run.1}}" class="btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                                 </svg>
-                            </a></th>
+                            </a>
+                        </th>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -1,3 +1,4 @@
+pub mod components;
 pub mod models;
 pub mod pages;
 
@@ -5,8 +6,6 @@ use axum::{routing::get, Router};
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
-
-use crate::pages::index::handle_page_index;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -19,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
     sqlx::migrate!().run(&db).await?;
 
     let app = Router::new()
-        .route("/", get(handle_page_index))
+        .route("/", get(pages::index::html))
         .with_state(db)
         .nest("/dist", axum_static::static_router("dist"));
 

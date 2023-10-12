@@ -1,57 +1,55 @@
+use std::collections::BTreeMap;
+
 use askama::Template;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::response::Html;
-use chrono::NaiveDateTime;
+use axum::response::IntoResponse;
+use serde::Deserialize;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
-use crate::models::run::Run;
-use crate::models::tag::Tag;
+use crate::components::choose_a_run;
+use crate::models::side::Side;
 
 #[derive(Template)]
-#[template(path = "pages/index.jinja")]
+#[template(path = "pages/index.jinja", escape = "none")]
 struct TemplateInstance {
-    runs: Vec<Run>,
+    left: String,
+    right: String,
 }
 
-pub async fn handle_page_index(State(db): State<Pool<Sqlite>>) -> Html<String> {
-    let runs_untagged = sqlx::query!(
-        "
-SELECT *
-FROM run
-        "
-    )
-    .map(|row| (row.id, row.created_at))
-    .fetch_all(&db)
-    .await
-    .unwrap();
+#[derive(Deserialize)]
+pub struct QueryParams {
+    left_run: Option<i64>,
+    right_run: Option<i64>,
+}
 
-    let mut runs = vec![];
+pub async fn html(
+    State(db): State<Pool<Sqlite>>,
+    Query(query_params): Query<BTreeMap<String, String>>,
+    Query(QueryParams {
+        left_run,
+        right_run,
+    }): Query<QueryParams>,
+) -> impl IntoResponse {
+    let left = if let Some(run_id) = left_run {
+        format!("{run_id}")
+    } else {
+        choose_a_run::TemplateInstance::new(db.clone(), Side::Left, query_params.clone())
+            .await
+            .render()
+            .unwrap()
+    };
 
-    for run in runs_untagged.iter() {
-        let tags = sqlx::query!(
-            "
-SELECT tag.*
-FROM tag
-JOIN run_tag ON run_tag.tag_id = tag.id
-WHERE run_id = ?;
-            ",
-            run.0
-        )
-        .map(|row| Tag {
-            id: row.id,
-            value: row.value,
-        })
-        .fetch_all(&db)
-        .await
-        .unwrap();
+    let right = if let Some(run_id) = right_run {
+        format!("{run_id}")
+    } else {
+        choose_a_run::TemplateInstance::new(db.clone(), Side::Right, query_params.clone())
+            .await
+            .render()
+            .unwrap()
+    };
 
-        runs.push(Run {
-            id: run.0,
-            created_at: NaiveDateTime::parse_from_str(&run.1, "%F %T").unwrap(),
-            tags,
-        })
-    }
-
-    Html(TemplateInstance { runs }.render().unwrap())
+    Html(TemplateInstance { left, right }.render().unwrap())
 }
