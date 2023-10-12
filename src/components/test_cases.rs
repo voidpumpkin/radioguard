@@ -5,14 +5,14 @@ use chrono::NaiveDateTime;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
-use crate::models::db::run::Run;
 use crate::models::db::tag::Tag;
+use crate::models::db::test_case::TestCase;
 use crate::models::side::Side;
 
 #[derive(Template)]
-#[template(path = "components/choose_a_run.jinja")]
+#[template(path = "components/test_cases.jinja")]
 pub struct TemplateInstance {
-    runs: Vec<(Run, String)>,
+    test_cases: Vec<(TestCase, String)>,
 }
 
 impl TemplateInstance {
@@ -20,28 +20,31 @@ impl TemplateInstance {
         db: Pool<Sqlite>,
         side: Side,
         query_params: BTreeMap<String, String>,
+        run_id: i64,
     ) -> TemplateInstance {
-        let runs_untagged = sqlx::query!(
+        let test_cases_untagged = sqlx::query!(
             "
     SELECT *
-    FROM run
-            "
+    FROM test_case
+    WHERE run_id = ?
+            ",
+            run_id
         )
         .fetch_all(&db)
         .await
         .unwrap();
 
-        let mut runs = vec![];
+        let mut test_cases = vec![];
 
-        for run in runs_untagged.iter() {
+        for test_case in test_cases_untagged.into_iter() {
             let tags = sqlx::query!(
                 "
     SELECT tag.*
     FROM tag
-    JOIN run_tag ON run_tag.tag_id = tag.id
-    WHERE run_id = ?;
+    JOIN test_case_tag ON test_case_tag.tag_id = tag.id
+    WHERE test_case_id = ?;
                 ",
-                run.id
+                test_case.id
             )
             .map(|row| Tag {
                 id: row.id,
@@ -51,28 +54,31 @@ impl TemplateInstance {
             .await
             .unwrap();
 
-            runs.push(Run {
-                id: run.id,
-                created_at: NaiveDateTime::parse_from_str(&run.created_at, "%F %T").unwrap(),
+            test_cases.push(TestCase {
+                id: test_case.id,
+                created_at: NaiveDateTime::parse_from_str(&test_case.created_at, "%F %T").unwrap(),
                 tags,
+                run_id,
+                name: test_case.name,
             })
         }
 
-        let runs = runs
+        let test_cases = test_cases
             .into_iter()
-            .map(|run| {
+            .map(|test_case| {
                 let mut query_params = query_params.clone();
-                query_params.insert(format!("{side}_run"), run.id.to_string());
+                query_params.insert(format!("{side}_test_case"), test_case.id.to_string());
+                query_params.remove(&format!("{side}_run"));
                 let link = query_params
                     .iter()
                     .map(|(k, v)| format!("{k}={v}"))
                     .collect::<Vec<String>>()
                     .join("&");
 
-                (run, link)
+                (test_case, link)
             })
             .collect();
 
-        TemplateInstance { runs }
+        TemplateInstance { test_cases }
     }
 }

@@ -1,28 +1,30 @@
 <div class="flex flex-col items-center p-2">
-    <h1>Choose a Run</h1>
+    <h1>Choose a Test Case</h1>
     <div>
         <div class="overflow-x-auto">
             <table class="table">
                 <thead>
                     <tr>
                         <th>Id</th>
+                        <th>Name</th>
                         <th>Created At</th>
                         <th>Tags</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for run in runs %}
+                    {% for test_case in test_cases %}
                     <tr>
-                        <th>{{run.0.id}}</th>
-                        <th>{{run.0.created_at}}</th>
+                        <th>{{test_case.0.id}}</th>
+                        <th>{{test_case.0.name}}</th>
+                        <th>{{test_case.0.created_at}}</th>
                         <th>
-                            {% for tag in run.0.tags %}
+                            {% for tag in test_case.0.tags %}
                             <div class="badge badge-outline">{{tag.value}}</div>
                             {% endfor %}
                         </th>
                         <th>
-                            <a href="?{{run.1}}" class="btn">
+                            <a href="?{{test_case.1}}" class="btn">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                                     <path stroke-linecap="round" stroke-linejoin="round"

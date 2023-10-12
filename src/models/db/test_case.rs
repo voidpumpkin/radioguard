@@ -1,9 +1,12 @@
 use chrono::NaiveDateTime;
 
+use super::tag::Tag;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TestCase {
     pub id: i64,
-    pub run: i64,
+    pub run_id: i64,
+    pub name: String,
     pub created_at: NaiveDateTime,
-    pub tag_ids: Vec<i64>,
+    pub tags: Vec<Tag>,
 }
