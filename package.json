@@ -2,7 +2,7 @@
   "name": "radioguard",
   "scripts": {
     "build": " npm run tailwind && npm run htmx",
-    "tailwind": "npx tailwindcss -i ./src/frontend/pages/styles.css -o ./dist/styles.css",
+    "tailwind": "npx tailwindcss -i ./src/frontend/shared/styles.css -o ./dist/styles.css",
     "htmx": "cp node_modules/htmx.org/dist/htmx.min.js dist/htmx.min.js"
   },
   "devDependencies": {

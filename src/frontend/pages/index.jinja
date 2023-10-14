@@ -1,25 +1,14 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="business">
+{% extends "frontend/shared/page_wrapper.jinja" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <title>Radioguard</title>
-    <link href="/dist/styles.css" rel="stylesheet">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥽</text></svg>">
-    <script src="/dist/htmx.min.js"></script>
-</head>
+{% block head %}
+<title>Radioguard</title>
+{% endblock %}
 
-<body>
-    <div class="flex w-full flex-row">
-        <div class="w-full min-h-screen card bg-base-300 rounded-box prose max-w-none">{{left}}</div>
-        <div class="divider divider-horizontal"></div>
-        <div class="w-full min-h-screen card bg-base-300 rounded-box prose max-w-none">{{right}}</div>
-    </div>
-</body>
-
-</html>
+{% block body %}
+<div class="flex w-full flex-row">
+    <div class="w-full min-h-screen card bg-base-300 rounded-box prose max-w-none">{{left}}</div>
+    <div class="divider divider-horizontal"></div>
+    <div class="w-full min-h-screen card bg-base-300 rounded-box prose max-w-none">{{right}}</div>
+</div>
+{% call super() %}
+{% endblock %}

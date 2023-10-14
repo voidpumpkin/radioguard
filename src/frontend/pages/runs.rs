@@ -78,5 +78,7 @@ pub async fn html(
 }
 
 pub fn router(db: Pool<Sqlite>) -> Router {
-    Router::new().route("/", get(html)).with_state(db)
+    Router::new()
+        .route("/:left_run_id/:right_run_id", get(html))
+        .with_state(db)
 }
