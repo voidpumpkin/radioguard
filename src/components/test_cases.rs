@@ -5,9 +5,9 @@ use chrono::NaiveDateTime;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
-use crate::models::db::tag::Tag;
-use crate::models::db::test_case::TestCase;
 use crate::models::side::Side;
+use crate::models::tag::Tag;
+use crate::models::test_case::TestCase;
 
 #[derive(Template)]
 #[template(path = "components/test_cases.jinja")]
