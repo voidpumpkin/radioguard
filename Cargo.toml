@@ -13,3 +13,4 @@ chrono = "0.4.31"
 axum_static = "1.2.2"
 serde = { version = "1.0.188", features = ["derive"] }
 strum = { version = "0.25", features = ["derive"] }
+img_diff = "5.0.0"
