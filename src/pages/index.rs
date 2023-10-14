@@ -143,68 +143,30 @@ async fn pick_runs_html(
 
 pub async fn html(
     State(db): State<Pool<Sqlite>>,
-    Query(all_query_params): Query<BTreeMap<String, String>>,
-    Query(query_params): Query<QueryParams>,
+    Query(all_qp): Query<BTreeMap<String, String>>,
+    Query(QueryParams {
+        left_test_case,
+        right_test_case,
+        left_run,
+        right_run,
+    }): Query<QueryParams>,
 ) -> Html<String> {
-    match query_params {
-        QueryParams {
-            left_test_case: Some(left_test_case),
-            right_test_case: Some(right_test_case),
-            left_run: None,
-            right_run: None,
-        } => diff_test_cases_html(left_test_case, right_test_case).await,
-        QueryParams {
-            left_test_case: Some(left_test_case),
-            right_test_case: None,
-            left_run: None,
-            right_run: Some(right_run),
-        } => {
-            pick_right_test_case_html(
-                db.clone(),
-                all_query_params.clone(),
-                left_test_case,
-                right_run,
-            )
-            .await
+    match (left_test_case, right_test_case, left_run, right_run) {
+        (Some(left_test_case), Some(right_test_case), None, None) => {
+            diff_test_cases_html(left_test_case, right_test_case).await
         }
-        QueryParams {
-            left_test_case: None,
-            right_test_case: Some(right_test_case),
-            left_run: Some(left_run),
-            right_run: None,
-        } => {
-            pick_left_test_case_html(
-                db.clone(),
-                all_query_params.clone(),
-                right_test_case,
-                left_run,
-            )
-            .await
+        (Some(left_test_case), None, None, Some(right_run)) => {
+            pick_right_test_case_html(db, all_qp, left_test_case, right_run).await
         }
-        QueryParams {
-            left_test_case: None,
-            right_test_case: None,
-            left_run: Some(left_run),
-            right_run: Some(right_run),
-        } => pick_test_cases_html(db.clone(), all_query_params.clone(), left_run, right_run).await,
-        QueryParams {
-            left_test_case: None,
-            right_test_case: None,
-            left_run: Some(left_run),
-            right_run: None,
-        } => pick_right_run_html(db.clone(), all_query_params.clone(), left_run).await,
-        QueryParams {
-            left_test_case: None,
-            right_test_case: None,
-            left_run: None,
-            right_run: Some(right_run),
-        } => pick_left_run_html(db.clone(), all_query_params.clone(), right_run).await,
-        QueryParams {
-            left_test_case: None,
-            right_test_case: None,
-            left_run: None,
-            right_run: None,
-        } => pick_runs_html(db.clone(), all_query_params.clone()).await,
+        (None, Some(right_test_case), Some(left_run), None) => {
+            pick_left_test_case_html(db, all_qp, right_test_case, left_run).await
+        }
+        (None, None, Some(left_run), Some(right_run)) => {
+            pick_test_cases_html(db, all_qp, left_run, right_run).await
+        }
+        (None, None, Some(left_run), None) => pick_right_run_html(db, all_qp, left_run).await,
+        (None, None, None, Some(right_run)) => pick_left_run_html(db, all_qp, right_run).await,
+        (None, None, None, None) => pick_runs_html(db, all_qp).await,
         // Baddies
         _ => Html(dbg!(
             "Correct your query params, something is incorrect".to_string()
