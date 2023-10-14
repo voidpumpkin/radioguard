@@ -19,6 +19,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/", get(pages::index::html))
+        .route("/runs/:left_run_id/:right_run_id", get(pages::runs::html))
         .with_state(db)
         .nest("/dist", axum_static::static_router("dist"));
 

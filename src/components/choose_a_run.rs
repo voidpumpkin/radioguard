@@ -60,16 +60,38 @@ impl TemplateInstance {
 
         let runs = runs
             .into_iter()
-            .map(|run| {
+            .filter_map(|run| {
+                let run_id = run.id.to_string();
                 let mut query_params = query_params.clone();
-                query_params.insert(format!("{side}_run"), run.id.to_string());
-                let link = query_params
-                    .iter()
-                    .map(|(k, v)| format!("{k}={v}"))
-                    .collect::<Vec<String>>()
-                    .join("&");
 
-                (run, link)
+                let link = match query_params
+                    .get(&format!("{}_run", side.opposite()))
+                    .cloned()
+                {
+                    Some(other_run_id) if other_run_id == run_id => {
+                        return None;
+                    }
+                    Some(other_run_id) => {
+                        let (left_run_id, right_run_id) = if side == Side::Left {
+                            (run_id.to_string(), other_run_id)
+                        } else {
+                            (other_run_id, run_id.to_string())
+                        };
+
+                        format!("/runs/{left_run_id}/{right_run_id}")
+                    }
+                    None => {
+                        query_params.insert(format!("{side}_run"), run_id);
+                        let query_params_joined = query_params
+                            .iter()
+                            .map(|(k, v)| format!("{k}={v}"))
+                            .collect::<Vec<String>>()
+                            .join("&");
+                        format!("?{query_params_joined}")
+                    }
+                };
+
+                Some((run, link))
             })
             .collect();
 
