@@ -1,3 +1,5 @@
+pub mod components;
+
 use std::collections::BTreeMap;
 
 use askama::Template;
@@ -5,15 +7,18 @@ use axum::extract::Path;
 use axum::extract::Query;
 use axum::extract::State;
 use axum::response::Html;
+use axum::routing::get;
+use axum::Router;
 use serde::Deserialize;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
-use crate::components::test_cases;
 use crate::models::side::Side;
 
+use self::components::test_cases;
+
 #[derive(Template)]
-#[template(path = "pages/runs.jinja", escape = "none")]
+#[template(path = "frontend/pages/runs.jinja", escape = "none")]
 struct TemplateInstance {
     left: String,
     right: String,
@@ -70,4 +75,8 @@ pub async fn html(
     .await;
 
     Html(TemplateInstance { left, right }.render().unwrap())
+}
+
+pub fn router(db: Pool<Sqlite>) -> Router {
+    Router::new().route("/", get(html)).with_state(db)
 }

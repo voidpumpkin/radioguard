@@ -10,7 +10,7 @@ use crate::models::tag::Tag;
 use crate::models::test_case::TestCase;
 
 #[derive(Template)]
-#[template(path = "components/test_cases.jinja")]
+#[template(path = "frontend/pages/runs/components/test_cases.jinja")]
 pub struct TemplateInstance {
     test_cases: Vec<(TestCase, String)>,
 }

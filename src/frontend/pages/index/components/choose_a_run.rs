@@ -10,7 +10,7 @@ use crate::models::side::Side;
 use crate::models::tag::Tag;
 
 #[derive(Template)]
-#[template(path = "components/choose_a_run.jinja")]
+#[template(path = "frontend/pages/index/components/choose_a_run.jinja")]
 pub struct TemplateInstance {
     runs: Vec<(Run, String)>,
 }

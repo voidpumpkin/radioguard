@@ -1,18 +1,23 @@
+pub mod components;
+
 use std::collections::BTreeMap;
 
 use askama::Template;
 use axum::extract::Query;
 use axum::extract::State;
 use axum::response::Html;
+use axum::routing::get;
+use axum::Router;
 use serde::Deserialize;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
-use crate::components::choose_a_run;
 use crate::models::side::Side;
 
+use self::components::choose_a_run;
+
 #[derive(Template)]
-#[template(path = "pages/index.jinja", escape = "none")]
+#[template(path = "frontend/pages/index.jinja", escape = "none")]
 struct TemplateInstance {
     left: String,
     right: String,
@@ -40,7 +45,7 @@ async fn side(
     }
 }
 
-pub async fn html(
+async fn html(
     State(db): State<Pool<Sqlite>>,
     Query(all_qp): Query<BTreeMap<String, String>>,
     Query(QueryParams {
@@ -51,4 +56,10 @@ pub async fn html(
     let left = side(db.clone(), all_qp.clone(), Side::Left, left_run).await;
     let right = side(db.clone(), all_qp.clone(), Side::Right, right_run).await;
     Html(TemplateInstance { left, right }.render().unwrap())
+}
+
+pub fn router(db: Pool<Sqlite>) -> Router {
+    Router::new()
+        .route("/:left_run_id/:right_run_id", get(html))
+        .with_state(db)
 }
