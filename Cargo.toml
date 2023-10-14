@@ -14,3 +14,5 @@ axum_static = "1.2.2"
 serde = { version = "1.0.188", features = ["derive"] }
 strum = { version = "0.25", features = ["derive"] }
 img_diff = "5.0.0"
+dotenvy = "0.15.7"
+dotenvy_macro = "0.15.7"

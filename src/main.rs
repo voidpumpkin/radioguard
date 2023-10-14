@@ -2,16 +2,19 @@ pub mod frontend;
 pub mod models;
 
 use axum::Router;
+use dotenvy_macro::dotenv;
 use frontend::pages;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
+use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    dotenvy::dotenv()?;
+
     let options = SqliteConnectOptions::new()
-        // .filename(":memory:")
-        .filename("data.db")
+        .filename(dotenv!("DATABASE_URL"))
         .create_if_missing(true);
     let db = SqlitePool::connect_with(options).await?;
 
@@ -22,11 +25,10 @@ async fn main() -> anyhow::Result<()> {
         .nest("/runs", pages::runs::router(db.clone()))
         .nest("/dist", axum_static::static_router("dist"));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from_str(dotenv!("ADDRESS"))?;
     println!("listening on http://{addr}");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
-        .await
-        .unwrap();
+        .await?;
     Ok(())
 }
