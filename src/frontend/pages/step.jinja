@@ -1,0 +1,10 @@
+{% extends "frontend/shared/page_wrapper.jinja" %}
+
+{% block head %}
+<title>Radioguard</title>
+{% endblock %}
+
+{% block body %}
+<img src="{{data_uri}}">
+{% call super() %}
+{% endblock %}

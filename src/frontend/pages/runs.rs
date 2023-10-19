@@ -14,7 +14,9 @@ use chrono::NaiveDateTime;
 use similar::TextDiff;
 use sqlx::Pool;
 use sqlx::Sqlite;
+use velcro::hash_map;
 
+use crate::models::side::Side;
 use crate::models::step::Step;
 use crate::models::test_case::TestCase;
 use crate::models::test_case::TestCaseWithSteps;
@@ -159,12 +161,13 @@ pub async fn html(
     let right_loners: Vec<TestCase> = right_cases;
 
     let mut diffs: String = String::default();
-    let mut file_name_lines_id_map: HashMap<String, HashMap<usize, i64>> = Default::default();
+    let mut file_name_lines_id_map: HashMap<String, HashMap<Side, HashMap<usize, i64>>> =
+        Default::default();
 
     for test_case in left_loners.into_iter() {
         let case_with_steps = get_case(&db, test_case.id).await;
         let (content, line_id_map) = case_to_string(&case_with_steps);
-        file_name_lines_id_map.insert(test_case.name.clone(), line_id_map);
+        file_name_lines_id_map.insert(test_case.name.clone(), hash_map! {Side::Left: line_id_map});
 
         let mut hunk = String::default();
         writeln!(&mut hunk, "--- {}", test_case.name).unwrap();
@@ -180,7 +183,7 @@ pub async fn html(
     for test_case in right_loners.into_iter() {
         let case_with_steps = get_case(&db, test_case.id).await;
         let (content, line_id_map) = case_to_string(&case_with_steps);
-        file_name_lines_id_map.insert(test_case.name.clone(), line_id_map);
+        file_name_lines_id_map.insert(test_case.name.clone(), hash_map! {Side::Right: line_id_map});
 
         let mut hunk = String::default();
         writeln!(&mut hunk, "--- {}", test_case.name).unwrap();
@@ -202,8 +205,13 @@ pub async fn html(
         let (l, l_line_id_map) = case_to_string(&l_case_with_steps);
         let (r, r_line_id_map) = case_to_string(&r_case_with_steps);
 
-        file_name_lines_id_map.insert(left_test_case.name.clone(), l_line_id_map);
-        file_name_lines_id_map.insert(right_test_case.name.clone(), r_line_id_map);
+        file_name_lines_id_map.insert(
+            left_test_case.name.clone(),
+            hash_map! {
+                Side::Left: l_line_id_map,
+                Side::Right: r_line_id_map
+            },
+        );
 
         if l == r {
             writeln!(&mut hunk, "--- {}", left_test_case.name).unwrap();

@@ -10,19 +10,31 @@
 <script>
     var map = {{ map }};
     function handle_line_click(self, line) {
-        let file_name = self
-            .parentElement
-            .parentElement
-            .parentElement
-            .parentElement
-            .parentElement
-            .parentElement
-            .parentElement
-            .parentElement
-            .parentElement
-            .querySelector(".d2h-file-name")
-            .textContent;
-        console.log(map[file_name][line]);
+        line++;
+
+        let side_block = self.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
+        let files_diff = side_block.parentElement;
+
+        let side = "Right";
+        if (files_diff.firstElementChild == side_block) {
+            side = "Left";
+        }
+
+        let file_name = files_diff.parentElement.querySelector(".d2h-file-name").textContent;
+
+        if (map[file_name] === undefined) {
+            console.warn(map, file_name);
+            return;
+        }
+        if (map[file_name][side] === undefined) {
+            console.warn(map, file_name, side);
+            return;
+        }
+        if (map[file_name][side][line] === undefined) {
+            console.warn(map, file_name, side, line);
+            return;
+        }
+        window.location.href = "/step/" + map[file_name][side][line];
     }
 </script>
 {% endblock %}
