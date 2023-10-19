@@ -25,7 +25,7 @@ impl TemplateInstance {
             "
     SELECT *
     FROM run
-            "
+            ",
         )
         .fetch_all(&db)
         .await
@@ -41,7 +41,7 @@ impl TemplateInstance {
     JOIN run_tag ON run_tag.tag_id = tag.id
     WHERE run_id = ?;
                 ",
-                run.id
+                run.id,
             )
             .map(|row| Tag {
                 id: row.id,

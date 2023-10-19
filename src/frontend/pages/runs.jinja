@@ -5,10 +5,19 @@
 {% endblock %}
 
 {% block body %}
-<div class="flex w-full flex-row">
-    <div class="w-full min-h-screen card bg-base-300 rounded-box prose max-w-none">{{left}}</div>
-    <div class="divider divider-horizontal"></div>
-    <div class="w-full min-h-screen card bg-base-300 rounded-box prose max-w-none">{{right}}</div>
-</div>
+<div id="destination-elem-id"></div>
+<script>
+    const targetElement = document.getElementById('destination-elem-id');
+    const configuration = {
+        drawFileList: false,
+        matching: 'none',
+        fileContentToggle: false,
+        outputFormat: 'side-by-side',
+        renderNothingWhenEmpty: false,
+        colorScheme: 'dark'
+    };
+    const diff2htmlUi = new Diff2HtmlUI(targetElement, `{{diff}}`, configuration);
+    diff2htmlUi.draw();
+</script>
 {% call super() %}
 {% endblock %}

@@ -2,20 +2,19 @@ pub mod frontend;
 pub mod models;
 
 use axum::Router;
-use dotenvy_macro::dotenv;
 use frontend::pages;
+use std::net::SocketAddr;
+
+use dotenvy_macro::dotenv;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
-use std::net::SocketAddr;
 use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv()?;
 
-    let options = SqliteConnectOptions::new()
-        .filename(dotenv!("DATABASE_URL"))
-        .create_if_missing(true);
+    let options = SqliteConnectOptions::from_str(dotenv!("DATABASE_URL"))?.create_if_missing(true);
     let db = SqlitePool::connect_with(options).await?;
 
     sqlx::migrate!().run(&db).await?;

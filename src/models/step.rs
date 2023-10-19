@@ -1,13 +1,25 @@
-use chrono::NaiveDateTime;
+use std::fmt::Display;
 
-use super::tag::Tag;
+use chrono::NaiveDateTime;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Step {
     pub id: i64,
+    pub name: String,
     pub data_uri: String,
     pub created_at: NaiveDateTime,
-    pub parent_test_id: Option<i64>,
-    pub parent_step_id: Option<i64>,
-    pub tags: Vec<Tag>,
+    pub test_case_id: i64,
+    pub children_steps: Vec<Step>,
+}
+
+impl Display for Step {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.name)?;
+
+        for child in &self.children_steps {
+            writeln!(f, "    {child}")?;
+        }
+
+        Ok(())
+    }
 }

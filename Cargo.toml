@@ -16,3 +16,7 @@ strum = { version = "0.25", features = ["derive"] }
 img_diff = "5.0.0"
 dotenvy = "0.15.7"
 dotenvy_macro = "0.15.7"
+tempfile = "3.8.0"
+similar = "2.3.0"
+diff2html = "0.2.3"
+async-recursion = "1.0.5"
