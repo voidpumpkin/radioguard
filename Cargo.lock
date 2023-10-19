@@ -1608,6 +1608,7 @@ dependencies = [
  "dotenvy_macro",
  "img_diff",
  "serde",
+ "serde_json",
  "similar",
  "sqlx",
  "strum",

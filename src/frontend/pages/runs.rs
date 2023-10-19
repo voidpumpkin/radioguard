@@ -1,4 +1,7 @@
+use std::collections::HashMap;
 use std::fmt::Write;
+use std::ops::Add;
+use std::ops::AddAssign;
 
 use askama::Template;
 use async_recursion::async_recursion;
@@ -14,20 +17,31 @@ use sqlx::Sqlite;
 
 use crate::models::step::Step;
 use crate::models::test_case::TestCase;
+use crate::models::test_case::TestCaseWithSteps;
 
 #[derive(Template)]
 #[template(path = "frontend/pages/runs.jinja", escape = "none")]
 struct TemplateInstance {
+    raw_templates: String,
     diff: String,
+    map: String,
 }
 
-fn write_in_steps(w: &mut String, steps: &[Step], ident: usize) {
+fn write_in_steps(
+    w: &mut String,
+    line_id_map: &mut HashMap<usize, i64>,
+    line: &mut usize,
+    steps: &[Step],
+    ident: usize,
+) {
     for step in steps {
         for _ in 0..ident {
             write!(w, "    ").unwrap();
         }
         writeln!(w, "{}", step.name).unwrap();
-        write_in_steps(w, &step.children_steps, ident + 1);
+        line.add_assign(1);
+        line_id_map.insert(*line, step.id);
+        write_in_steps(w, line_id_map, line, &step.children_steps, ident + 1);
     }
 }
 
@@ -85,8 +99,10 @@ WHERE run_id = $1
     .unwrap()
 }
 
-async fn get_case_string(db: &Pool<Sqlite>, test_case_id: i64) -> String {
-    let test_case = sqlx::query!(
+async fn get_case(db: &Pool<Sqlite>, test_case_id: i64) -> TestCaseWithSteps {
+    let steps = get_steps(db, test_case_id, None).await;
+
+    let row = sqlx::query!(
         "
 SELECT *
 FROM test_case
@@ -94,20 +110,31 @@ WHERE test_case.id = $1
         ",
         test_case_id
     )
-    .map(|row| TestCase {
-        id: row.id,
-        run_id: row.run_id,
-        name: row.name,
-        created_at: NaiveDateTime::parse_from_str(&row.created_at, "%F %T").unwrap(),
-    })
     .fetch_one(db)
     .await
     .unwrap();
 
-    let steps = get_steps(db, test_case.id, None).await;
+    TestCaseWithSteps {
+        id: row.id,
+        run_id: row.run_id,
+        name: row.name,
+        created_at: NaiveDateTime::parse_from_str(&row.created_at, "%F %T").unwrap(),
+        steps,
+    }
+}
+
+fn case_to_string(test_case: &TestCaseWithSteps) -> (String, HashMap<usize, i64>) {
     let mut result = "".to_string();
-    write_in_steps(&mut result, &steps, 0);
-    result
+    let mut line_id_map = Default::default();
+    let mut line = 0;
+    write_in_steps(
+        &mut result,
+        &mut line_id_map,
+        &mut line,
+        &test_case.steps,
+        0,
+    );
+    (result, line_id_map)
 }
 
 pub async fn html(
@@ -132,14 +159,17 @@ pub async fn html(
     let right_loners: Vec<TestCase> = right_cases;
 
     let mut diffs: String = String::default();
+    let mut file_name_lines_id_map: HashMap<String, HashMap<usize, i64>> = Default::default();
 
     for test_case in left_loners.into_iter() {
-        let content = get_case_string(&db, test_case.id).await;
+        let case_with_steps = get_case(&db, test_case.id).await;
+        let (content, line_id_map) = case_to_string(&case_with_steps);
+        file_name_lines_id_map.insert(test_case.name.clone(), line_id_map);
 
         let mut hunk = String::default();
         writeln!(&mut hunk, "--- {}", test_case.name).unwrap();
         writeln!(&mut hunk, "+++ {}", test_case.name).unwrap();
-        writeln!(&mut hunk, "@@ -1,{} @@", content.len()).unwrap();
+        writeln!(&mut hunk, "@@ @@").unwrap();
         for line in content.lines() {
             writeln!(&mut hunk, "- {line}").unwrap();
         }
@@ -148,12 +178,14 @@ pub async fn html(
     }
 
     for test_case in right_loners.into_iter() {
-        let content = get_case_string(&db, test_case.id).await;
+        let case_with_steps = get_case(&db, test_case.id).await;
+        let (content, line_id_map) = case_to_string(&case_with_steps);
+        file_name_lines_id_map.insert(test_case.name.clone(), line_id_map);
 
         let mut hunk = String::default();
         writeln!(&mut hunk, "--- {}", test_case.name).unwrap();
         writeln!(&mut hunk, "+++ {}", test_case.name).unwrap();
-        writeln!(&mut hunk, "@@ +1,{} @@", content.len()).unwrap();
+        writeln!(&mut hunk, "@@ @@").unwrap();
         for line in content.lines() {
             writeln!(&mut hunk, "+ {line}").unwrap();
         }
@@ -164,8 +196,14 @@ pub async fn html(
     for (left_test_case, right_test_case) in matches.into_iter() {
         let mut hunk = String::default();
 
-        let l = get_case_string(&db, left_test_case.id).await;
-        let r = get_case_string(&db, right_test_case.id).await;
+        let l_case_with_steps = get_case(&db, left_test_case.id).await;
+        let r_case_with_steps = get_case(&db, right_test_case.id).await;
+
+        let (l, l_line_id_map) = case_to_string(&l_case_with_steps);
+        let (r, r_line_id_map) = case_to_string(&r_case_with_steps);
+
+        file_name_lines_id_map.insert(left_test_case.name.clone(), l_line_id_map);
+        file_name_lines_id_map.insert(right_test_case.name.clone(), r_line_id_map);
 
         if l == r {
             writeln!(&mut hunk, "--- {}", left_test_case.name).unwrap();
@@ -193,7 +231,43 @@ pub async fn html(
         diffs += hunk.to_string().as_str();
     }
 
-    Html(TemplateInstance { diff: diffs }.render().unwrap())
+    let raw_templates = r#"{
+        "tag-file-changed": '<span class="d2h-tag d2h-changed d2h-changed-tag">COOL</span>',
+        "generic-line": `
+            <tr>
+                <td class="{{lineClass}} {{type}}">
+                {{{lineNumber}}}
+                </td>
+                <td class="{{type}}">
+                    <div class="{{contentClass}}">
+                    {{#prefix}}
+                        <span class="d2h-code-line-prefix">{{{prefix}}}</span>
+                    {{/prefix}}
+                    {{^prefix}}
+                        <span class="d2h-code-line-prefix">&nbsp;</span>
+                    {{/prefix}}
+                    {{#content}}
+                        <span class="d2h-code-line-ctn hover:underline hover:cursor-pointer" onclick="handle_line_click(this, {{{lineNumber}}})">{{{content}}}</span>
+                    {{/content}}
+                    {{^content}}
+                        <span class="d2h-code-line-ctn"><br></span>
+                    {{/content}}
+                    </div>
+                </td>
+            </tr>
+        `
+    }"#
+    .to_string();
+
+    Html(
+        TemplateInstance {
+            diff: diffs,
+            raw_templates,
+            map: serde_json::to_string(&file_name_lines_id_map).unwrap(),
+        }
+        .render()
+        .unwrap(),
+    )
 }
 
 pub fn router(db: Pool<Sqlite>) -> Router {

@@ -2,6 +2,29 @@
 
 {% block head %}
 <title>Radioguard</title>
+<style>
+    .d2h-info {
+        display: none;
+    }
+</style>
+<script>
+    var map = {{ map }};
+    function handle_line_click(self, line) {
+        let file_name = self
+            .parentElement
+            .parentElement
+            .parentElement
+            .parentElement
+            .parentElement
+            .parentElement
+            .parentElement
+            .parentElement
+            .parentElement
+            .querySelector(".d2h-file-name")
+            .textContent;
+        console.log(map[file_name][line]);
+    }
+</script>
 {% endblock %}
 
 {% block body %}
@@ -14,7 +37,8 @@
         fileContentToggle: false,
         outputFormat: 'side-by-side',
         renderNothingWhenEmpty: false,
-        colorScheme: 'dark'
+        colorScheme: 'dark',
+        rawTemplates: {{ raw_templates }}
     };
     const diff2htmlUi = new Diff2HtmlUI(targetElement, `{{diff}}`, configuration);
     diff2htmlUi.draw();
