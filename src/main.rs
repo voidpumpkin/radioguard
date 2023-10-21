@@ -1,3 +1,4 @@
+pub mod db;
 pub mod frontend;
 pub mod models;
 

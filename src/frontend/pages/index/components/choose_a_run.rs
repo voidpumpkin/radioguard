@@ -1,13 +1,12 @@
 use std::collections::BTreeMap;
 
 use askama::Template;
-use chrono::NaiveDateTime;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
+use crate::db::get_runs;
 use crate::models::run::Run;
 use crate::models::side::Side;
-use crate::models::tag::Tag;
 
 #[derive(Template)]
 #[template(path = "frontend/pages/index/components/choose_a_run.jinja")]
@@ -21,42 +20,7 @@ impl TemplateInstance {
         side: Side,
         query_params: BTreeMap<String, String>,
     ) -> TemplateInstance {
-        let runs_untagged = sqlx::query!(
-            "
-    SELECT *
-    FROM run
-            ",
-        )
-        .fetch_all(&db)
-        .await
-        .unwrap();
-
-        let mut runs = vec![];
-
-        for run in runs_untagged.iter() {
-            let tags = sqlx::query!(
-                "
-    SELECT tag.*
-    FROM tag
-    JOIN run_tag ON run_tag.tag_id = tag.id
-    WHERE run_id = ?;
-                ",
-                run.id,
-            )
-            .map(|row| Tag {
-                id: row.id,
-                value: row.value,
-            })
-            .fetch_all(&db)
-            .await
-            .unwrap();
-
-            runs.push(Run {
-                id: run.id,
-                created_at: NaiveDateTime::parse_from_str(&run.created_at, "%F %T").unwrap(),
-                tags,
-            })
-        }
+        let runs = get_runs(db).await;
 
         let runs = runs
             .into_iter()

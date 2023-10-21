@@ -7,6 +7,8 @@ use axum::Router;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
+use crate::db::get_step_data_uri;
+
 #[derive(Template)]
 #[template(path = "frontend/pages/step.jinja", escape = "none")]
 struct TemplateInstance {
@@ -14,19 +16,7 @@ struct TemplateInstance {
 }
 
 async fn html(State(db): State<Pool<Sqlite>>, Path(id): Path<i64>) -> Html<String> {
-    let data_uri = sqlx::query!(
-        "
-    SELECT data_uri
-    FROM step
-    WHERE id is $1
-            ",
-        id
-    )
-    .map(|row| row.data_uri)
-    .fetch_one(&db)
-    .await
-    .unwrap();
-
+    let data_uri = get_step_data_uri(id, &db).await;
     Html(TemplateInstance { data_uri }.render().unwrap())
 }
 

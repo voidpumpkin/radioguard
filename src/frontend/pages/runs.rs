@@ -1,21 +1,20 @@
 use std::collections::HashMap;
 use std::fmt::Write;
-use std::ops::Add;
 use std::ops::AddAssign;
 
 use askama::Template;
-use async_recursion::async_recursion;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::response::Html;
 use axum::routing::get;
 use axum::Router;
-use chrono::NaiveDateTime;
 use similar::TextDiff;
 use sqlx::Pool;
 use sqlx::Sqlite;
 use velcro::hash_map;
 
+use crate::db::get_case_with_steps;
+use crate::db::get_run_test_cases;
 use crate::models::side::Side;
 use crate::models::step::Step;
 use crate::models::test_case::TestCase;
@@ -44,84 +43,6 @@ fn write_in_steps(
         line.add_assign(1);
         line_id_map.insert(*line, step.id);
         write_in_steps(w, line_id_map, line, &step.children_steps, ident + 1);
-    }
-}
-
-#[async_recursion]
-async fn get_steps(
-    db: &Pool<Sqlite>,
-    left_test_case: i64,
-    parent_step_id: Option<i64>,
-) -> Vec<Step> {
-    let mut steps = sqlx::query!(
-        "
-    SELECT *
-    FROM step
-    WHERE step.test_case_id is $1 and step.parent_step_id is $2
-            ",
-        left_test_case,
-        parent_step_id
-    )
-    .map(|row| Step {
-        id: row.id,
-        name: row.name,
-        data_uri: row.data_uri,
-        created_at: NaiveDateTime::parse_from_str(&row.created_at, "%F %T").unwrap(),
-        test_case_id: row.test_case_id,
-        children_steps: vec![],
-    })
-    .fetch_all(db)
-    .await
-    .unwrap();
-
-    for step in steps.iter_mut() {
-        step.children_steps = get_steps(db, left_test_case, step.id.into()).await;
-    }
-
-    steps
-}
-
-async fn get_run_test_cases(db: &Pool<Sqlite>, run_id: i64) -> Vec<TestCase> {
-    sqlx::query!(
-        "
-SELECT *
-FROM test_case
-WHERE run_id = $1
-        ",
-        run_id
-    )
-    .map(|row| TestCase {
-        id: row.id,
-        run_id: row.run_id,
-        name: row.name,
-        created_at: NaiveDateTime::parse_from_str(&row.created_at, "%F %T").unwrap(),
-    })
-    .fetch_all(db)
-    .await
-    .unwrap()
-}
-
-async fn get_case(db: &Pool<Sqlite>, test_case_id: i64) -> TestCaseWithSteps {
-    let steps = get_steps(db, test_case_id, None).await;
-
-    let row = sqlx::query!(
-        "
-SELECT *
-FROM test_case
-WHERE test_case.id = $1
-        ",
-        test_case_id
-    )
-    .fetch_one(db)
-    .await
-    .unwrap();
-
-    TestCaseWithSteps {
-        id: row.id,
-        run_id: row.run_id,
-        name: row.name,
-        created_at: NaiveDateTime::parse_from_str(&row.created_at, "%F %T").unwrap(),
-        steps,
     }
 }
 
@@ -165,7 +86,7 @@ pub async fn html(
         Default::default();
 
     for test_case in left_loners.into_iter() {
-        let case_with_steps = get_case(&db, test_case.id).await;
+        let case_with_steps = get_case_with_steps(&db, test_case.id).await;
         let (content, line_id_map) = case_to_string(&case_with_steps);
         file_name_lines_id_map.insert(test_case.name.clone(), hash_map! {Side::Left: line_id_map});
 
@@ -181,7 +102,7 @@ pub async fn html(
     }
 
     for test_case in right_loners.into_iter() {
-        let case_with_steps = get_case(&db, test_case.id).await;
+        let case_with_steps = get_case_with_steps(&db, test_case.id).await;
         let (content, line_id_map) = case_to_string(&case_with_steps);
         file_name_lines_id_map.insert(test_case.name.clone(), hash_map! {Side::Right: line_id_map});
 
@@ -199,8 +120,8 @@ pub async fn html(
     for (left_test_case, right_test_case) in matches.into_iter() {
         let mut hunk = String::default();
 
-        let l_case_with_steps = get_case(&db, left_test_case.id).await;
-        let r_case_with_steps = get_case(&db, right_test_case.id).await;
+        let l_case_with_steps = get_case_with_steps(&db, left_test_case.id).await;
+        let r_case_with_steps = get_case_with_steps(&db, right_test_case.id).await;
 
         let (l, l_line_id_map) = case_to_string(&l_case_with_steps);
         let (r, r_line_id_map) = case_to_string(&r_case_with_steps);
