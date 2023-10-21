@@ -2,6 +2,8 @@
 
 {% block head %}
 <title>Radioguard</title>
+<link rel="stylesheet" type="text/css" href="/dist/diff2html.min.css" />
+<script type="text/javascript" src="/dist/diff2html-ui.min.js"></script>
 <style>
     .d2h-info {
         display: none;
@@ -34,7 +36,8 @@
             console.warn(map, file_name, side, line);
             return;
         }
-        window.location.href = "/step/" + map[file_name][side][line];
+        let id = map[file_name][side][line];
+        window.location.href = `/steps/${id}/${id}`;
     }
 </script>
 {% endblock %}

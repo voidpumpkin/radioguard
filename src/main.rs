@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .nest("/", pages::index::router(db.clone()))
         .nest("/runs", pages::runs::router(db.clone()))
-        .nest("/step", pages::step::router(db.clone()))
+        .nest("/steps", pages::steps::router(db.clone()))
         .nest("/dist", axum_static::static_router("dist"));
 
     let addr = SocketAddr::from_str(dotenv!("ADDRESS"))?;

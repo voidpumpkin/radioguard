@@ -5,6 +5,19 @@
 {% endblock %}
 
 {% block body %}
-<img src="{{data_uri}}">
+<div class="w-[85vw] mx-auto">
+    <div class="carousel w-full">
+        {% for e in list %}
+        <div id="{{e.unique_id}}" class="carousel-item w-full">
+            <img src="{{e.data_uri}}" class="w-full {{e.css}}">
+        </div>
+        {% endfor %}
+    </div>
+    <div class="flex justify-center w-full py-2 gap-2">
+        {% for e in list %}
+        <a href="#{{e.unique_id}}" class="btn btn-xs">{{e.cta}}</a>
+        {% endfor %}
+    </div>
+</div>
 {% call super() %}
 {% endblock %}
