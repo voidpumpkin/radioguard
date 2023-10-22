@@ -1,0 +1,26 @@
+{% extends "frontend/shared/page_wrapper.jinja" %}
+
+{% block head %}
+<title>Radioguard</title>
+{% endblock %}
+
+{% block body %}
+<div class="w-[90vw] h-[90vh] mx-auto mt-2">
+    <div class="tabs tabs-boxed justify-center">
+        {% for e in list %}
+        <a href="#{{e.unique_id}}" class="tab"
+            _="on load or hashchange from window if window.location.hash is '#{{e.unique_id}}' then add .tab-active else remove .tab-active end">{{e.cta}}</a>
+        {% endfor %}
+    </div>
+    <div class="w-full h-full overflow-auto">
+        <div class="carousel w-full">
+            {% for e in list %}
+            <div id="{{e.unique_id}}" class="carousel-item w-full">
+                <img src="{{e.data_uri}}" class="{{e.img_css}} w-full">
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% call super() %}
+{% endblock %}

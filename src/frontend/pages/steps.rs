@@ -18,7 +18,7 @@ use crate::db::get_step_data_uri;
 use crate::models::side::Side;
 
 #[derive(Template)]
-#[template(path = "frontend/pages/step.jinja", escape = "none")]
+#[template(path = "frontend/pages/steps.jinja", escape = "none")]
 struct TemplateInstance {
     list: Vec<ListItem>,
 }
@@ -27,7 +27,7 @@ struct ListItem {
     unique_id: String,
     data_uri: String,
     cta: String,
-    css: String,
+    img_css: String,
 }
 
 fn data_uri_to_dyn_img(data_uri: &str) -> DynamicImage {
@@ -79,19 +79,19 @@ async fn html(
             unique_id: Side::Left.to_string(),
             data_uri: left_data_uri,
             cta: "👈".to_string(),
-            css: Default::default(),
+            img_css: "".to_string(),
         },
         ListItem {
             unique_id: "diff".to_string(),
             data_uri: format!("data:@file/png;base64,{base64_string}"),
             cta: "🤝".to_string(),
-            css: "invert".to_string(),
+            img_css: "invert".to_string(),
         },
         ListItem {
             unique_id: Side::Right.to_string(),
             data_uri: right_data_uri,
             cta: "👉".to_string(),
-            css: Default::default(),
+            img_css: "".to_string(),
         },
     ];
     Html(TemplateInstance { list }.render().unwrap())
