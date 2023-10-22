@@ -134,11 +134,13 @@ pub async fn html(
             },
         );
 
+        writeln!(&mut hunk, "--- {}", left_test_case.name).unwrap();
+        writeln!(&mut hunk, "+++ {}", right_test_case.name).unwrap();
+
         if l == r {
-            writeln!(&mut hunk, "--- {}", left_test_case.name).unwrap();
-            writeln!(&mut hunk, "+++ {}", right_test_case.name).unwrap();
             writeln!(&mut hunk, "@@ @@").unwrap();
             for line in l.lines() {
+                println!("{line}");
                 writeln!(&mut hunk, " {line}").unwrap();
             }
             diffs += hunk.to_string().as_str();
@@ -176,7 +178,11 @@ pub async fn html(
                         <span class="d2h-code-line-prefix">&nbsp;</span>
                     {{/prefix}}
                     {{#content}}
-                        <span class="d2h-code-line-ctn hover:underline hover:cursor-pointer" onclick="handle_line_click(this, {{{lineNumber}}})">{{{content}}}</span>
+                        <span
+                            class="d2h-code-line-ctn
+                            hover:underline hover:cursor-pointer"
+                            onclick="handle_line_click(this, {{{lineNumber}}})"
+                        >{{{content}}}</span>
                     {{/content}}
                     {{^content}}
                         <span class="d2h-code-line-ctn"><br></span>

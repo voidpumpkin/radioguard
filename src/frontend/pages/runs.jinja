@@ -15,29 +15,11 @@
         line++;
 
         let side_block = self.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
-        let files_diff = side_block.parentElement;
+        let file_name = side_block.parentElement.parentElement.querySelector(".d2h-file-name").textContent;
 
-        let side = "Right";
-        if (files_diff.firstElementChild == side_block) {
-            side = "Left";
-        }
-
-        let file_name = files_diff.parentElement.querySelector(".d2h-file-name").textContent;
-
-        if (map[file_name] === undefined) {
-            console.warn(map, file_name);
-            return;
-        }
-        if (map[file_name][side] === undefined) {
-            console.warn(map, file_name, side);
-            return;
-        }
-        if (map[file_name][side][line] === undefined) {
-            console.warn(map, file_name, side, line);
-            return;
-        }
-        let id = map[file_name][side][line];
-        window.location.href = `/steps/${id}/${id}`;
+        let left_id = map[file_name]["Left"][line];
+        let right_id = map[file_name]["Right"][line];
+        window.location.href = `/steps/${left_id}/${right_id}`;
     }
 </script>
 {% endblock %}
