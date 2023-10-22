@@ -50,7 +50,24 @@ fn data_uri_to_dyn_img(data_uri: &str) -> DynamicImage {
     image::load(cursor, ImageFormat::PNG).unwrap()
 }
 
-async fn html(
+async fn html_single(State(db): State<Pool<Sqlite>>, Path(step_id): Path<i64>) -> Html<String> {
+    let data_uri = get_step_data_uri(step_id, &db).await;
+
+    Html(
+        TemplateInstance {
+            list: vec![ListItem {
+                unique_id: "single".to_string(),
+                data_uri,
+                cta: "🖼️".to_string(),
+                img_css: "".to_string(),
+            }],
+        }
+        .render()
+        .unwrap(),
+    )
+}
+
+async fn html_diff(
     State(db): State<Pool<Sqlite>>,
     Path((left_step_id, right_step_id)): Path<(i64, i64)>,
 ) -> Html<String> {
@@ -61,9 +78,7 @@ async fn html(
     let r_img = data_uri_to_dyn_img(right_data_uri.as_str());
 
     let (f, out_img) = img_diff::subtract_image(&l_img, &r_img);
-    let _contains_changes = f.total_cmp(&0.0_f64) == Ordering::Greater;
-    dbg!(f);
-    dbg!(_contains_changes);
+    let contains_changes = f.total_cmp(&0.0_f64) == Ordering::Greater;
 
     // We will write the image data to a byte vector in PNG format.
     let mut bytes: Vec<u8> = Vec::new();
@@ -74,31 +89,33 @@ async fn html(
     // Now, we encode these bytes into a base64 string.
     let base64_string = base64::engine::general_purpose::STANDARD.encode(bytes);
 
-    let list = vec![
-        ListItem {
-            unique_id: Side::Left.to_string(),
-            data_uri: left_data_uri,
-            cta: "👈".to_string(),
-            img_css: "".to_string(),
-        },
-        ListItem {
+    let mut list = vec![];
+    list.push(ListItem {
+        unique_id: Side::Left.to_string(),
+        data_uri: left_data_uri,
+        cta: "👈".to_string(),
+        img_css: "".to_string(),
+    });
+    if contains_changes {
+        list.push(ListItem {
             unique_id: "diff".to_string(),
             data_uri: format!("data:@file/png;base64,{base64_string}"),
             cta: "🤝".to_string(),
             img_css: "invert".to_string(),
-        },
-        ListItem {
-            unique_id: Side::Right.to_string(),
-            data_uri: right_data_uri,
-            cta: "👉".to_string(),
-            img_css: "".to_string(),
-        },
-    ];
+        });
+    }
+    list.push(ListItem {
+        unique_id: Side::Right.to_string(),
+        data_uri: right_data_uri,
+        cta: "👉".to_string(),
+        img_css: "".to_string(),
+    });
     Html(TemplateInstance { list }.render().unwrap())
 }
 
 pub fn router(db: Pool<Sqlite>) -> Router {
     Router::new()
-        .route("/:left_step_id/:right_step_id", get(html))
+        .route("/:step_id", get(html_single))
+        .route("/:left_step_id/:right_step_id", get(html_diff))
         .with_state(db)
 }

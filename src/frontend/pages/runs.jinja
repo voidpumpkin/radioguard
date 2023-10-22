@@ -17,9 +17,19 @@
         let side_block = self.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
         let file_name = side_block.parentElement.parentElement.querySelector(".d2h-file-name").textContent;
 
-        let left_id = map[file_name]["Left"][line];
-        let right_id = map[file_name]["Right"][line];
-        window.location.href = `/steps/${left_id}/${right_id}`;
+        let left_id = map?.[file_name]?.["Left"]?.[line];
+        let right_id = map?.[file_name]?.["Right"]?.[line];
+
+        if (!!left_id && !!right_id) {
+            window.location.href = `/steps/${left_id}/${right_id}`;
+        } else if (left_id) {
+            window.location.href = `/steps/${left_id}`;
+        } else if (right_id) {
+            window.location.href = `/steps/${right_id}`;
+        } else {
+            alert("Internal script error");
+        }
+
     }
 </script>
 {% endblock %}
