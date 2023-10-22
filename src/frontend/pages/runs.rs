@@ -140,7 +140,6 @@ pub async fn html(
         if l == r {
             writeln!(&mut hunk, "@@ @@").unwrap();
             for line in l.lines() {
-                println!("{line}");
                 writeln!(&mut hunk, " {line}").unwrap();
             }
             diffs += hunk.to_string().as_str();

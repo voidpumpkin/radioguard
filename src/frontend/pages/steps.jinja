@@ -8,12 +8,7 @@
 <div class="w-[90vw] h-[90vh] mx-auto mt-2">
     <div class="tabs tabs-boxed justify-center">
         {% for e in list %}
-        <a href="#{{e.unique_id}}" class="tab" _="
-                on load or hashchange from window
-                if window.location.hash is '#{{e.unique_id}}' or (window.location.hash is empty and I match 'a:first-child')
-                then add .tab-active
-                else remove .tab-active
-                end">{{e.cta}}</a>
+        <a href="#{{e.unique_id}}" class="tab tab-active">{{e.cta}}</a>
         {% endfor %}
     </div>
     <div class="w-full h-full overflow-auto">
@@ -26,5 +21,25 @@
         </div>
     </div>
 </div>
+<script>
+    function toggle_tab_highlight(unique_id) {
+        let href = `#${unique_id}`;
+        let first_a_child = document.querySelector("a:first-child");
+        let a = document.querySelector(`a[href='${href}']`);
+        if (window.location.hash === href || (a === first_a_child && !window.location.hash)) {
+            a.classList.add("tab-active");
+        } else {
+            a.classList.remove("tab-active");
+        }
+
+    }
+    function toggle_tab_highlights() {
+        {% for e in list %}
+        toggle_tab_highlight('{{e.unique_id}}');
+        {% endfor %}
+    }
+    window.addEventListener("load", toggle_tab_highlights);
+    window.addEventListener("hashchange", toggle_tab_highlights);
+</script>
 {% call super() %}
 {% endblock %}
