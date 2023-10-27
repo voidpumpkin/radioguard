@@ -160,8 +160,9 @@ pub async fn html(
 
         diffs += hunk.to_string().as_str();
     }
-
+    //  "tag-file-changed": '<span class="d2h-tag d2h-changed d2h-changed-tag">COOL</span>',
     let raw_templates = r#"{
+        "tag-file-changed": '',
         "generic-line": `
             <tr>
                 <td class="{{lineClass}} {{type}}">
