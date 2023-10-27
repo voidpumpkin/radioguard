@@ -162,7 +162,6 @@ pub async fn html(
     }
 
     let raw_templates = r#"{
-        "tag-file-changed": '<span class="d2h-tag d2h-changed d2h-changed-tag">COOL</span>',
         "generic-line": `
             <tr>
                 <td class="{{lineClass}} {{type}}">
@@ -189,6 +188,34 @@ pub async fn html(
                     </div>
                 </td>
             </tr>
+        `,
+        "side-by-side-file-diff": `
+            <div id="{{fileHtmlId}}" class="d2h-file-wrapper" data-lang="{{file.language}}">
+                <div class="d2h-file-header">
+                {{{filePath}}}
+                </div>
+                <div class="d2h-files-diff">
+                    <div class="d2h-file-side-diff">
+                        <div class="d2h-code-wrapper">
+                            <table class="d2h-diff-table">
+                                <tbody class="d2h-diff-tbody">
+                                {{{diffs.left}}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="mid-section d2h-diff-table !w-fit flex flex-col justify-around px-1 bg-neutral items-center"></div>
+                    <div class="d2h-file-side-diff">
+                        <div class="d2h-code-wrapper">
+                            <table class="d2h-diff-table">
+                                <tbody class="d2h-diff-tbody">
+                                {{{diffs.right}}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `
     }"#
     .to_string();

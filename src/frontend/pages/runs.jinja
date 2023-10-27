@@ -11,14 +11,67 @@
 </style>
 <script>
     var map = {{ map }};
+    function get_line_ids(file_name, line) {
+        let left_id = map?.[file_name]?.["Left"]?.[line];
+        let right_id = map?.[file_name]?.["Right"]?.[line];
+        return [left_id, right_id];
+    }
+    function on_load(self) {
+        let l_side = self.parentElement.firstElementChild;
+
+        let file_name = l_side.parentElement.parentElement.querySelector(".d2h-file-name")?.textContent;
+
+        let l_line_nums = Array.from(l_side.querySelectorAll(".d2h-code-side-linenumber")).map(e => parseInt(e.textContent));
+
+        let r_side = self.parentElement.lastElementChild;
+        let r_line_nums = Array.from(r_side.querySelectorAll(".d2h-code-side-linenumber")).map(e => parseInt(e.textContent));
+
+        l_side.querySelectorAll("tr").forEach((_, i) => {
+            if (i === 0) return;
+            let e = document.createElement("div");
+            e.classList.add("break-keep");
+            e.textContent = "⏳⌛";
+            self.appendChild(e);
+
+            (async () => {
+                let l_num = l_line_nums[i];
+                let r_num = r_line_nums[i];
+
+
+                let line = l_num;
+                if (isNaN(line)) {
+                    line = r_num;
+                }
+
+                let [left_id, right_id] = get_line_ids(file_name, line + 1);
+
+                if (left_id === undefined && right_id == undefined) {
+                    e.textContent = "wtf";
+                    return;
+                }
+                if (left_id === undefined || right_id == undefined) {
+                    e.textContent = "❗🟰";
+                    return;
+                }
+
+                let resp = await fetch(`/api/steps/${left_id}/${right_id}`);
+                let json = await resp.json();
+
+                if (json.contains_changes) {
+                    e.textContent = "❗🟰";
+                } else {
+                    e.textContent = "🟰🟰";
+                }
+            })();
+        });
+    }
     function handle_line_click(self, line) {
         line++;
 
-        let side_block = self.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
-        let file_name = side_block.parentElement.parentElement.querySelector(".d2h-file-name").textContent;
+        let side_block = self?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement;
+        let file_name = side_block?.parentElement?.parentElement?.querySelector(".d2h-file-name")?.textContent;
 
-        let left_id = map?.[file_name]?.["Left"]?.[line];
-        let right_id = map?.[file_name]?.["Right"]?.[line];
+        let [left_id, right_id] = get_line_ids(file_name, line);
 
         if (!!left_id && !!right_id) {
             window.location.href = `/steps/${left_id}/${right_id}`;
@@ -37,8 +90,8 @@
 {% block body %}
 <div id="destination-elem-id"></div>
 <script>
-    const targetElement = document.getElementById('destination-elem-id');
-    const configuration = {
+    var targetElement = document.getElementById('destination-elem-id');
+    var configuration = {
         drawFileList: false,
         matching: 'none',
         fileContentToggle: false,
@@ -47,8 +100,9 @@
         colorScheme: 'dark',
         rawTemplates: {{ raw_templates }}
     };
-    const diff2htmlUi = new Diff2HtmlUI(targetElement, `{{diff}}`, configuration);
+    var diff2htmlUi = new Diff2HtmlUI(targetElement, `{{diff}}`, configuration);
     diff2htmlUi.draw();
+    document.querySelectorAll(".mid-section").forEach(on_load);
 </script>
 {% call super() %}
 {% endblock %}

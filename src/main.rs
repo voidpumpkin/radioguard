@@ -1,6 +1,8 @@
+pub mod api;
 pub mod db;
 pub mod frontend;
 pub mod models;
+pub mod services;
 
 use axum::Router;
 use frontend::pages;
@@ -24,6 +26,7 @@ async fn main() -> anyhow::Result<()> {
         .nest("/", pages::index::router(db.clone()))
         .nest("/runs", pages::runs::router(db.clone()))
         .nest("/steps", pages::steps::router(db.clone()))
+        .nest("/api", api::router(db.clone()))
         .nest("/dist", axum_static::static_router("dist"));
 
     let addr = SocketAddr::from_str(dotenv!("ADDRESS"))?;
