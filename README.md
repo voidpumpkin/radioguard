@@ -7,6 +7,9 @@ Visual Testing
 ```
 npm i
 cargo install cargo-watch
+
+sqlx database create
+sqlx migrate run
 ```
 
 ## Run
