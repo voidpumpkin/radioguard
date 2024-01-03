@@ -6,6 +6,7 @@
                 <thead>
                     <tr>
                         <th>Id</th>
+                        <th>Name</th>
                         <th>Created At</th>
                         <th>Tags</th>
                         <th></th>
@@ -15,6 +16,7 @@
                     {% for run in runs %}
                     <tr>
                         <th>{{run.0.id}}</th>
+                        <th>{{run.0.name}}</th>
                         <th>{{run.0.created_at}}</th>
                         <th>
                             {% for tag in run.0.tags %}

@@ -4,13 +4,18 @@ use axum::http::header;
 use axum::http::HeaderMap;
 use axum::response::IntoResponse;
 use axum::routing::get;
+use axum::routing::post;
 use axum::Json;
 use axum::Router;
+use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
 use crate::db::get_step_data_uri;
+use crate::db::insert_and_get_run;
+use crate::db::insert_and_get_step;
+use crate::db::insert_and_get_test_case;
 use crate::services::compare_steps;
 
 #[derive(Debug, Serialize)]
@@ -46,11 +51,68 @@ async fn diff_steps_by_image(
     (headers, Json(Comparison { contains_changes }))
 }
 
+async fn post_run() {
+    todo!()
+}
+
+async fn post_test_case() {
+    todo!()
+}
+
+#[derive(Deserialize)]
+struct PostStepReqBody {
+    run_id: String,
+    run_tags: Vec<String>,
+    test_case_name: String,
+    step_name: String,
+    img_base64_url: String,
+    parent_step_id: Option<i64>,
+}
+
+#[derive(Serialize)]
+pub struct PostStepResBody {
+    // None on errors
+    pub step_id: Option<i64>,
+}
+
+// TODO make it impossible to fail
+async fn post_step(
+    State(db): State<Pool<Sqlite>>,
+    Json(body): Json<PostStepReqBody>,
+) -> impl IntoResponse {
+    let PostStepReqBody {
+        run_id,
+        run_tags,
+        test_case_name,
+        step_name,
+        img_base64_url,
+        parent_step_id,
+    } = body;
+
+    let run = insert_and_get_run(&db, &run_id, &run_tags).await;
+    let test_case = insert_and_get_test_case(&db, run.id, &test_case_name).await;
+    let step = insert_and_get_step(
+        &db,
+        test_case.id,
+        &step_name,
+        &img_base64_url,
+        parent_step_id,
+    )
+    .await;
+
+    Json(PostStepResBody {
+        step_id: Some(step.id),
+    })
+}
+
 pub fn router(db: Pool<Sqlite>) -> Router {
     Router::new()
         .route(
             "/steps/:left_step_id/:right_step_id",
             get(diff_steps_by_image),
         )
+        .route("/runs", post(post_run))
+        .route("/test_cases", post(post_test_case))
+        .route("/steps", post(post_step))
         .with_state(db)
 }

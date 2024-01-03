@@ -23,3 +23,6 @@ async-recursion = "1.0.5"
 velcro = "0.5.4"
 base64 = "0.21.4"
 image = "0.22.5"
+
+[package.metadata.bin]
+cargo-watch = { version = "8.4.1" }

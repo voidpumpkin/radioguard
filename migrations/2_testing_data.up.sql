@@ -23,10 +23,10 @@ VALUES
 (3,'end'),
 (4,'look');
 
-INSERT INTO run(id,created_at)
+INSERT INTO run(id,name,created_at)
 VALUES
-(1,'2023-10-11 12:00:00'),
-(2,'2023-10-11 13:00:00');
+(1,'pirmas runas','2023-10-11 12:00:00'),
+(2,'antras runas','2023-10-11 13:00:00');
 
 INSERT INTO run_tag(run_id,tag_id)
 VALUES

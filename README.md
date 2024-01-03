@@ -15,5 +15,5 @@ sqlx migrate run
 ## Run
 
 ```
-cargo watch -s "npm run build && cargo run"
+cargo run watch -s "npm run build && cargo run"
 ```
