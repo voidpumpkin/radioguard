@@ -49,7 +49,7 @@ pub async fn compare_steps(
     let base64_string = base64::engine::general_purpose::STANDARD.encode(bytes);
     Ok((
         contains_changes,
-        format!("data:@file/png;base64,{base64_string}"),
+        format!("data:image/png;base64,{base64_string}"),
     ))
 }
 
@@ -63,11 +63,11 @@ pub fn subtract_image(
     let mut diff_image = DynamicImage::new_rgba8(x_dim, y_dim);
     let mut max_value: f64 = 0.0;
     let mut current_value: f64 = 0.0;
-    for ((x, y, pixel_a), (_, _, pixel_b)) in a.pixels().zip(b.pixels()) {
+    'outer: for ((x, y, pixel_a), (_, _, pixel_b)) in a.pixels().zip(b.pixels()) {
         for ((x1, y1), (x2, y2)) in ignore_ranges {
             if (*x1..=*x2).contains(&x) && (*y1..=*y2).contains(&y) {
                 diff_image.put_pixel(x, y, image::Rgba([255, 255, 255, 255]));
-                continue;
+                continue 'outer;
             }
         }
 
@@ -84,7 +84,15 @@ pub fn subtract_image(
         current_value += f64::from(g);
         current_value += f64::from(b);
         current_value += f64::from(a);
-        diff_image.put_pixel(x, y, image::Rgba([255 - r, 255 - g, 255 - b, 255 - a]));
+        diff_image.put_pixel(
+            x,
+            y,
+            image::Rgba(if r != 0 || g != 0 || b != 0 || a != 0 {
+                [0, 255, 255, 255]
+            } else {
+                [255, 255, 255, 255]
+            }),
+        );
     }
     (((current_value * 100.0) / max_value), diff_image)
 }
