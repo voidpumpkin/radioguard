@@ -61,7 +61,7 @@ async fn html_diff(
     let (right_data_uri, right_test_case_id) =
         get_step_data_uri_and_test_case_id(right_step_id, &db).await?;
     let right_test_case = get_test_case(&db, right_test_case_id).await?;
-    let ignore_ranges = [left_test_case.ignore_ranges, right_test_case.ignore_ranges].concat();
+    let ignore_ranges = [left_test_case.ignore_areas, right_test_case.ignore_areas].concat();
 
     let (contains_changes, diff_data_uri) = compare_steps(
         left_data_uri.as_str(),

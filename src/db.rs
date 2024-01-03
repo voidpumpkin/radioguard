@@ -81,7 +81,7 @@ pub async fn get_run_test_cases(db: &Pool<Sqlite>, run_id: i64) -> Result<Vec<Te
             id: row.id,
             run_id: row.run_id,
             name: row.name,
-            ignore_ranges: serde_json::from_str(row.ignore_ranges.as_str())?,
+            ignore_areas: serde_json::from_str(row.ignore_areas.as_str())?,
             created_at: row.created_at.parse()?,
         })
     })
@@ -104,7 +104,7 @@ pub async fn get_test_case(db: &Pool<Sqlite>, test_case_id: i64) -> Result<TestC
         id: row.id,
         run_id: row.run_id,
         name: row.name,
-        ignore_ranges: serde_json::from_str(row.ignore_ranges.as_str())?,
+        ignore_areas: serde_json::from_str(row.ignore_areas.as_str())?,
         created_at: row.created_at.parse()?,
     })
 }
@@ -263,17 +263,20 @@ pub async fn insert_and_get_test_case(
     db: &Pool<Sqlite>,
     run_id: i64,
     name: &str,
+    ignore_areas: Vec<((u32, u32), (u32, u32))>,
 ) -> Result<TestCase> {
     let now = Utc::now().to_string();
+    let ignore_areas = serde_json::to_string(&ignore_areas)?;
 
     sqlx::query!(
         "
-    INSERT INTO test_case(run_id,name,created_at)
-    VALUES (?, ?, ?);
+    INSERT INTO test_case(run_id,name,created_at,ignore_areas)
+    VALUES (?, ?, ?, ?);
                 ",
         run_id,
         name,
-        now
+        now,
+        ignore_areas
     )
     .execute(db)
     .await
@@ -295,7 +298,7 @@ pub async fn insert_and_get_test_case(
         id: test_case.id,
         run_id,
         name: test_case.name,
-        ignore_ranges: serde_json::from_str(test_case.ignore_ranges.as_str())?,
+        ignore_areas: serde_json::from_str(test_case.ignore_areas.as_str())?,
         created_at: test_case.created_at.parse()?,
     })
 }
@@ -318,7 +321,7 @@ pub async fn insert_and_get_step(
         parent_step_id,
         name,
         now,
-        img_base64_url
+        img_base64_url,
     )
     .execute(db)
     .await

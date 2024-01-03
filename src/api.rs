@@ -47,7 +47,7 @@ async fn diff_steps_by_image(
     let (right_data_uri, right_test_case_id) =
         get_step_data_uri_and_test_case_id(right_step_id, &db).await?;
     let right_test_case = get_test_case(&db, right_test_case_id).await?;
-    let ignore_ranges = [left_test_case.ignore_ranges, right_test_case.ignore_ranges].concat();
+    let ignore_ranges = [left_test_case.ignore_areas, right_test_case.ignore_areas].concat();
 
     let (contains_changes, _diff_img_data_uri) = compare_steps(
         left_data_uri.as_str(),
@@ -67,6 +67,7 @@ struct PostStepReqBody {
     step_name: String,
     img_base64_url: String,
     parent_step_id: Option<i64>,
+    ignore_areas: Vec<((u32, u32), (u32, u32))>,
 }
 
 #[derive(Serialize)]
@@ -86,6 +87,7 @@ async fn post_step(
         step_name,
         img_base64_url,
         parent_step_id,
+        ignore_areas,
     } = body;
 
     let run = match insert_and_get_run(&db, &run_id, &run_tags).await {
@@ -95,7 +97,8 @@ async fn post_step(
             return Json(PostStepResBody { step_id: None });
         }
     };
-    let test_case = match insert_and_get_test_case(&db, run.id, &test_case_name).await {
+    let test_case = match insert_and_get_test_case(&db, run.id, &test_case_name, ignore_areas).await
+    {
         Ok(test_case) => test_case,
         Err(err) => {
             log::error!("{err}");

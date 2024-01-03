@@ -11,7 +11,7 @@ CREATE TABLE test_case(
    run_id INTEGER NOT NULL,
    name TEXT NOT NULL,
 -- json [[number, number], [number, number]][]
-   ignore_ranges TEXT NOT NULL DEFAULT '[]',
+   ignore_areas TEXT NOT NULL DEFAULT '[]',
 -- RFC 3339
    created_at TEXT NOT NULL,
    FOREIGN KEY(run_id) REFERENCES run(id),
