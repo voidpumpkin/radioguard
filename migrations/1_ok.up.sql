@@ -40,7 +40,8 @@ CREATE TABLE step_tag(
    step_id INTEGER NOT NULL,
    tag_id INTEGER NOT NULL,
    FOREIGN KEY(step_id) REFERENCES step(id),
-   FOREIGN KEY(tag_id) REFERENCES tag(id)
+   FOREIGN KEY(tag_id) REFERENCES tag(id),
+   UNIQUE(step_id, tag_id)
 );
 
 CREATE TABLE test_case_tag(
@@ -48,7 +49,8 @@ CREATE TABLE test_case_tag(
    test_case_id INTEGER NOT NULL,
    tag_id INTEGER NOT NULL,
    FOREIGN KEY(test_case_id) REFERENCES test_case(id),
-   FOREIGN KEY(tag_id) REFERENCES tag(id)
+   FOREIGN KEY(tag_id) REFERENCES tag(id),
+   UNIQUE(test_case_id, tag_id)
 );
 
 CREATE TABLE run_tag(
@@ -56,5 +58,6 @@ CREATE TABLE run_tag(
    run_id INTEGER NOT NULL,
    tag_id INTEGER NOT NULL,
    FOREIGN KEY(run_id) REFERENCES run(id),
-   FOREIGN KEY(tag_id) REFERENCES tag(id)
+   FOREIGN KEY(tag_id) REFERENCES tag(id),
+   UNIQUE(run_id, tag_id)
 );
