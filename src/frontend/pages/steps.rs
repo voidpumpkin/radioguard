@@ -10,7 +10,8 @@ use axum::Router;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
-use crate::db::get_step_data_uri;
+use crate::db::get_step_data_uri_and_test_case_id;
+use crate::db::get_test_case;
 use crate::error::HttpResult;
 use crate::models::side::Side;
 use crate::services::compare_steps;
@@ -32,7 +33,7 @@ async fn html_single(
     State(db): State<Pool<Sqlite>>,
     Path(step_id): Path<i64>,
 ) -> HttpResult<Html<String>> {
-    let data_uri = get_step_data_uri(step_id, &db).await?;
+    let (data_uri, _) = get_step_data_uri_and_test_case_id(step_id, &db).await?;
 
     Ok(Html(
         TemplateInstance {
@@ -54,10 +55,20 @@ async fn html_diff(
     let mut headers = HeaderMap::new();
     headers.insert(header::CACHE_CONTROL, "public, max-age=31557600".parse()?);
 
-    let left_data_uri = get_step_data_uri(left_step_id, &db).await?;
-    let right_data_uri = get_step_data_uri(right_step_id, &db).await?;
-    let (contains_changes, diff_data_uri) =
-        compare_steps(left_data_uri.as_str(), right_data_uri.as_str()).await?;
+    let (left_data_uri, left_test_case_id) =
+        get_step_data_uri_and_test_case_id(left_step_id, &db).await?;
+    let left_test_case = get_test_case(&db, left_test_case_id).await?;
+    let (right_data_uri, right_test_case_id) =
+        get_step_data_uri_and_test_case_id(right_step_id, &db).await?;
+    let right_test_case = get_test_case(&db, right_test_case_id).await?;
+    let ignore_ranges = [left_test_case.ignore_ranges, right_test_case.ignore_ranges].concat();
+
+    let (contains_changes, diff_data_uri) = compare_steps(
+        left_data_uri.as_str(),
+        right_data_uri.as_str(),
+        &ignore_ranges,
+    )
+    .await?;
 
     let mut list = vec![];
     list.push(ListItem {

@@ -1,7 +1,7 @@
 CREATE TABLE run(
    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
    name TEXT NOT NULL,
--- YYYY-MM-DD HH:MM:SS
+-- RFC 3339
    created_at TEXT NOT NULL,
    UNIQUE(name)
 );
@@ -10,7 +10,9 @@ CREATE TABLE test_case(
    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
    run_id INTEGER NOT NULL,
    name TEXT NOT NULL,
--- YYYY-MM-DD HH:MM:SS
+-- json [[number, number], [number, number]][]
+   ignore_ranges TEXT NOT NULL DEFAULT '[]',
+-- RFC 3339
    created_at TEXT NOT NULL,
    FOREIGN KEY(run_id) REFERENCES run(id),
    UNIQUE(name, run_id)
@@ -22,7 +24,7 @@ CREATE TABLE step(
    test_case_id INTEGER NOT NULL,
    parent_step_id INTEGER,
    name TEXT NOT NULL,
--- YYYY-MM-DD HH:MM:SS
+-- RFC 3339
    created_at TEXT NOT NULL,
    FOREIGN KEY(test_case_id) REFERENCES test_case(id),
    FOREIGN KEY(parent_step_id) REFERENCES step(id),

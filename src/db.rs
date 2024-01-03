@@ -10,16 +10,19 @@ use crate::models::test_case::TestCase;
 use crate::models::test_case::TestCaseWithSteps;
 use anyhow::Result;
 
-pub async fn get_step_data_uri(id: i64, db: &Pool<Sqlite>) -> Result<String> {
+pub async fn get_step_data_uri_and_test_case_id(
+    id: i64,
+    db: &Pool<Sqlite>,
+) -> Result<(String, i64)> {
     Ok(sqlx::query!(
         "
-    SELECT data_uri
+    SELECT data_uri, test_case_id
     FROM step
     WHERE id is $1
             ",
         id
     )
-    .map(|row| row.data_uri)
+    .map(|row| (row.data_uri, row.test_case_id))
     .fetch_one(db)
     .await?)
 }
@@ -78,11 +81,32 @@ pub async fn get_run_test_cases(db: &Pool<Sqlite>, run_id: i64) -> Result<Vec<Te
             id: row.id,
             run_id: row.run_id,
             name: row.name,
+            ignore_ranges: serde_json::from_str(row.ignore_ranges.as_str())?,
             created_at: row.created_at.parse()?,
         })
     })
     .collect::<Result<Vec<_>>>()?;
     Ok(vec)
+}
+
+pub async fn get_test_case(db: &Pool<Sqlite>, test_case_id: i64) -> Result<TestCase> {
+    let row = sqlx::query!(
+        "
+    SELECT *
+    FROM test_case
+    WHERE id = $1
+        ",
+        test_case_id
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(TestCase {
+        id: row.id,
+        run_id: row.run_id,
+        name: row.name,
+        ignore_ranges: serde_json::from_str(row.ignore_ranges.as_str())?,
+        created_at: row.created_at.parse()?,
+    })
 }
 
 pub async fn get_case_with_steps(
@@ -271,6 +295,7 @@ pub async fn insert_and_get_test_case(
         id: test_case.id,
         run_id,
         name: test_case.name,
+        ignore_ranges: serde_json::from_str(test_case.ignore_ranges.as_str())?,
         created_at: test_case.created_at.parse()?,
     })
 }

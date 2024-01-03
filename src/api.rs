@@ -12,7 +12,8 @@ use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
-use crate::db::get_step_data_uri;
+use crate::db::get_step_data_uri_and_test_case_id;
+use crate::db::get_test_case;
 use crate::db::insert_and_get_run;
 use crate::db::insert_and_get_step;
 use crate::db::insert_and_get_test_case;
@@ -40,21 +41,22 @@ async fn diff_steps_by_image(
         ));
     };
 
-    let left_data_uri = get_step_data_uri(left_step_id, &db).await?;
-    let right_data_uri = get_step_data_uri(right_step_id, &db).await?;
+    let (left_data_uri, left_test_case_id) =
+        get_step_data_uri_and_test_case_id(left_step_id, &db).await?;
+    let left_test_case = get_test_case(&db, left_test_case_id).await?;
+    let (right_data_uri, right_test_case_id) =
+        get_step_data_uri_and_test_case_id(right_step_id, &db).await?;
+    let right_test_case = get_test_case(&db, right_test_case_id).await?;
+    let ignore_ranges = [left_test_case.ignore_ranges, right_test_case.ignore_ranges].concat();
 
-    let (contains_changes, _diff_img_data_uri) =
-        compare_steps(left_data_uri.as_str(), right_data_uri.as_str()).await?;
+    let (contains_changes, _diff_img_data_uri) = compare_steps(
+        left_data_uri.as_str(),
+        right_data_uri.as_str(),
+        &ignore_ranges,
+    )
+    .await?;
 
     Ok((headers, Json(Comparison { contains_changes })))
-}
-
-async fn post_run() {
-    todo!()
-}
-
-async fn post_test_case() {
-    todo!()
 }
 
 #[derive(Debug, Deserialize)]
@@ -127,8 +129,6 @@ pub fn router(db: Pool<Sqlite>) -> Router {
             "/steps/:left_step_id/:right_step_id",
             get(diff_steps_by_image),
         )
-        .route("/runs", post(post_run))
-        .route("/test_cases", post(post_test_case))
         .route("/steps", post(post_step))
         .with_state(db)
 }
