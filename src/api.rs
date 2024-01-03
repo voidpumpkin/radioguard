@@ -59,7 +59,7 @@ async fn post_test_case() {
     todo!()
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct PostStepReqBody {
     run_id: String,
     run_tags: Vec<String>,
@@ -88,6 +88,8 @@ async fn post_step(
         img_base64_url,
         parent_step_id,
     } = body;
+
+    dbg!(&step_name);
 
     let run = insert_and_get_run(&db, &run_id, &run_tags).await;
     let test_case = insert_and_get_test_case(&db, run.id, &test_case_name).await;

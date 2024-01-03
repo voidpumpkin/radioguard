@@ -1,4 +1,5 @@
-use chrono::NaiveDateTime;
+use chrono::DateTime;
+use chrono::Utc;
 
 use super::tag::Tag;
 
@@ -6,6 +7,6 @@ use super::tag::Tag;
 pub struct Run {
     pub id: i64,
     pub name: String,
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
     pub tags: Vec<Tag>,
 }

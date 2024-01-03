@@ -30,6 +30,7 @@
             if (i === 0) return;
             let e = document.createElement("div");
             e.classList.add("break-keep");
+            e.classList.add("whitespace-nowrap");
             e.textContent = "⏳⌛";
             self.appendChild(e);
 
@@ -45,11 +46,11 @@
 
                 let [left_id, right_id] = get_line_ids(file_name, line + 1);
 
-                if (left_id === undefined && right_id == undefined) {
+                if (left_id === undefined && right_id === undefined) {
                     e.textContent = "wtf";
                     return;
                 }
-                if (left_id === undefined || right_id == undefined) {
+                if (left_id === undefined || right_id === undefined) {
                     e.textContent = "❗🟰";
                     return;
                 }

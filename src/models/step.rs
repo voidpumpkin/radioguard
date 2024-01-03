@@ -1,13 +1,14 @@
 use std::fmt::Display;
 
-use chrono::NaiveDateTime;
+use chrono::DateTime;
+use chrono::Utc;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Step {
     pub id: i64,
     pub name: String,
     pub data_uri: String,
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
     pub test_case_id: i64,
     pub children_steps: Vec<Step>,
 }

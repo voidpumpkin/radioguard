@@ -12,7 +12,8 @@ CREATE TABLE test_case(
    name TEXT NOT NULL,
 -- YYYY-MM-DD HH:MM:SS
    created_at TEXT NOT NULL,
-   FOREIGN KEY(run_id) REFERENCES run(id)
+   FOREIGN KEY(run_id) REFERENCES run(id),
+   UNIQUE(name, run_id)
 );
 
 CREATE TABLE step(
@@ -24,7 +25,8 @@ CREATE TABLE step(
 -- YYYY-MM-DD HH:MM:SS
    created_at TEXT NOT NULL,
    FOREIGN KEY(test_case_id) REFERENCES test_case(id),
-   FOREIGN KEY(parent_step_id) REFERENCES step(id)
+   FOREIGN KEY(parent_step_id) REFERENCES step(id),
+   UNIQUE(name, test_case_id)
 );
 
 CREATE TABLE tag(

@@ -1,5 +1,5 @@
 use async_recursion::async_recursion;
-use chrono::NaiveDateTime;
+use chrono::DateTime;
 use chrono::Utc;
 use sqlx::Pool;
 use sqlx::Sqlite;
@@ -44,7 +44,7 @@ pub async fn get_steps(
         id: row.id,
         name: row.name,
         data_uri: row.data_uri,
-        created_at: NaiveDateTime::parse_from_str(&row.created_at, "%F %T").unwrap(),
+        created_at: row.created_at.parse().unwrap(),
         test_case_id: row.test_case_id,
         children_steps: vec![],
     })
@@ -72,7 +72,7 @@ pub async fn get_run_test_cases(db: &Pool<Sqlite>, run_id: i64) -> Vec<TestCase>
         id: row.id,
         run_id: row.run_id,
         name: row.name,
-        created_at: NaiveDateTime::parse_from_str(&row.created_at, "%F %T").unwrap(),
+        created_at: row.created_at.parse().unwrap(),
     })
     .fetch_all(db)
     .await
@@ -98,7 +98,7 @@ pub async fn get_case_with_steps(db: &Pool<Sqlite>, test_case_id: i64) -> TestCa
         id: row.id,
         run_id: row.run_id,
         name: row.name,
-        created_at: NaiveDateTime::parse_from_str(&row.created_at, "%F %T").unwrap(),
+        created_at: row.created_at.parse().unwrap(),
         steps,
     }
 }
@@ -137,15 +137,17 @@ pub async fn get_runs(db: Pool<Sqlite>) -> Vec<Run> {
         runs.push(Run {
             id: run.id,
             name: run.name,
-            created_at: NaiveDateTime::parse_from_str(&run.created_at, "%F %T").unwrap(),
+            created_at: run.created_at.parse().unwrap(),
             tags,
         })
     }
     runs
 }
 
+// 2024-01-03T10:37:39.545814633Z
+// 2023-10-11T12:00:00.545814633Z
 pub async fn insert_and_get_run(db: &Pool<Sqlite>, name: &str, tag_values: &[String]) -> Run {
-    let now = Utc::now().naive_utc().to_string();
+    let now = Utc::now().to_string();
 
     sqlx::query!(
         "
@@ -193,7 +195,7 @@ pub async fn insert_and_get_run(db: &Pool<Sqlite>, name: &str, tag_values: &[Str
     Run {
         id: run.id,
         name: run.name,
-        created_at: NaiveDateTime::parse_from_str(&run.created_at, "%F %T").unwrap(),
+        created_at: run.created_at.parse().unwrap(),
         tags,
     }
 }
@@ -228,7 +230,7 @@ pub async fn insert_and_get_tag(db: &Pool<Sqlite>, tag: &str) -> Tag {
 }
 
 pub async fn insert_and_get_test_case(db: &Pool<Sqlite>, run_id: i64, name: &str) -> TestCase {
-    let now = Utc::now().naive_utc().to_string();
+    let now = Utc::now().to_string();
 
     sqlx::query!(
         "
@@ -260,7 +262,7 @@ pub async fn insert_and_get_test_case(db: &Pool<Sqlite>, run_id: i64, name: &str
         id: test_case.id,
         run_id,
         name: test_case.name,
-        created_at: NaiveDateTime::parse_from_str(&test_case.created_at, "%F %T").unwrap(),
+        created_at: test_case.created_at.parse().unwrap(),
     }
 }
 
@@ -271,7 +273,7 @@ pub async fn insert_and_get_step(
     img_base64_url: &str,
     parent_step_id: Option<i64>,
 ) -> Step {
-    let now = Utc::now().naive_utc().to_string();
+    let now = Utc::now().to_string();
 
     sqlx::query!(
         "
@@ -308,7 +310,7 @@ pub async fn insert_and_get_step(
         name: step.name,
         test_case_id,
         data_uri: step.data_uri,
-        created_at: NaiveDateTime::parse_from_str(&step.created_at, "%F %T").unwrap(),
+        created_at: step.created_at.parse().unwrap(),
         children_steps,
     }
 }
