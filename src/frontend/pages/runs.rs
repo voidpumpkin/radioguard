@@ -206,7 +206,7 @@ pub async fn html(
                             </table>
                         </div>
                     </div>
-                    <div class="mid-section d2h-diff-table !w-fit flex flex-col justify-around px-1 bg-neutral items-center"></div>
+                    <div class="mid-section d2h-diff-table !w-fit flex flex-col justify-around px-1 bg-neutral items-center overflow-x-scroll"></div>
                     <div class="d2h-file-side-diff">
                         <div class="d2h-code-wrapper">
                             <table class="d2h-diff-table">
