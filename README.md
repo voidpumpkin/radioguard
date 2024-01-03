@@ -8,12 +8,12 @@ Visual Testing
 npm i
 cargo install cargo-watch
 
-sqlx database create
-sqlx migrate run
+cargo bin sqlx database create
+cargo bin sqlx migrate run
 ```
 
 ## Run
 
 ```
-cargo run watch -s "npm run build && cargo run"
+cargo bin cargo-watch -s "npm run build && cargo run"
 ```
