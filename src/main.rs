@@ -1,5 +1,8 @@
+#![deny(clippy::unwrap_used)]
+
 pub mod api;
 pub mod db;
+pub mod error;
 pub mod frontend;
 pub mod models;
 pub mod services;
@@ -16,6 +19,7 @@ use std::str::FromStr;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv()?;
+    pretty_env_logger::init();
 
     let options = SqliteConnectOptions::from_str(dotenv!("DATABASE_URL"))?.create_if_missing(true);
     let db = SqlitePool::connect_with(options).await?;

@@ -3,6 +3,9 @@ name = "radioguard"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+debug = true
+
 [dependencies]
 sqlx = { version = "0.7.2", features = ["sqlite", "runtime-tokio", "migrate"] }
 anyhow = "1.0.75"
@@ -23,6 +26,8 @@ async-recursion = "1.0.5"
 velcro = "0.5.4"
 base64 = "0.21.4"
 image = "0.22.5"
+log = "0.4"
+pretty_env_logger = "0.4"
 
 [package.metadata.bin]
 cargo-watch = { version = "8.4.1" }

@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use anyhow::Result;
 use askama::Template;
 use sqlx::Pool;
 use sqlx::Sqlite;
@@ -19,8 +20,8 @@ impl TemplateInstance {
         db: Pool<Sqlite>,
         side: Side,
         query_params: BTreeMap<String, String>,
-    ) -> TemplateInstance {
-        let runs = get_runs(db).await;
+    ) -> Result<TemplateInstance> {
+        let runs = get_runs(db).await?;
 
         let runs = runs
             .into_iter()
@@ -59,6 +60,6 @@ impl TemplateInstance {
             })
             .collect();
 
-        TemplateInstance { runs }
+        Ok(TemplateInstance { runs })
     }
 }

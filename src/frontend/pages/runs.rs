@@ -15,6 +15,7 @@ use velcro::hash_map;
 
 use crate::db::get_case_with_steps;
 use crate::db::get_run_test_cases;
+use crate::error::HttpResult;
 use crate::models::side::Side;
 use crate::models::step::Step;
 use crate::models::test_case::TestCase;
@@ -63,9 +64,9 @@ fn case_to_string(test_case: &TestCaseWithSteps) -> (String, HashMap<usize, i64>
 pub async fn html(
     State(db): State<Pool<Sqlite>>,
     Path((left_run, right_run)): Path<(i64, i64)>,
-) -> Html<String> {
-    let left_cases = get_run_test_cases(&db, left_run).await;
-    let mut right_cases = get_run_test_cases(&db, right_run).await;
+) -> HttpResult<Html<String>> {
+    let left_cases = get_run_test_cases(&db, left_run).await?;
+    let mut right_cases = get_run_test_cases(&db, right_run).await?;
 
     let mut matches: Vec<(TestCase, TestCase)> = vec![];
     let mut left_loners: Vec<TestCase> = vec![];
@@ -86,7 +87,7 @@ pub async fn html(
         Default::default();
 
     for test_case in left_loners.into_iter() {
-        let case_with_steps = get_case_with_steps(&db, test_case.id).await;
+        let case_with_steps = get_case_with_steps(&db, test_case.id).await?;
         let (content, line_id_map) = case_to_string(&case_with_steps);
         file_name_lines_id_map.insert(test_case.name.clone(), hash_map! {Side::Left: line_id_map});
 
@@ -102,7 +103,7 @@ pub async fn html(
     }
 
     for test_case in right_loners.into_iter() {
-        let case_with_steps = get_case_with_steps(&db, test_case.id).await;
+        let case_with_steps = get_case_with_steps(&db, test_case.id).await?;
         let (content, line_id_map) = case_to_string(&case_with_steps);
         file_name_lines_id_map.insert(test_case.name.clone(), hash_map! {Side::Right: line_id_map});
 
@@ -120,8 +121,8 @@ pub async fn html(
     for (left_test_case, right_test_case) in matches.into_iter() {
         let mut hunk = String::default();
 
-        let l_case_with_steps = get_case_with_steps(&db, left_test_case.id).await;
-        let r_case_with_steps = get_case_with_steps(&db, right_test_case.id).await;
+        let l_case_with_steps = get_case_with_steps(&db, left_test_case.id).await?;
+        let r_case_with_steps = get_case_with_steps(&db, right_test_case.id).await?;
 
         let (l, l_line_id_map) = case_to_string(&l_case_with_steps);
         let (r, r_line_id_map) = case_to_string(&r_case_with_steps);
@@ -221,15 +222,14 @@ pub async fn html(
     }"#
     .to_string();
 
-    Html(
+    Ok(Html(
         TemplateInstance {
             diff: diffs,
             raw_templates,
-            map: serde_json::to_string(&file_name_lines_id_map).unwrap(),
+            map: serde_json::to_string(&file_name_lines_id_map)?,
         }
-        .render()
-        .unwrap(),
-    )
+        .render()?,
+    ))
 }
 
 pub fn router(db: Pool<Sqlite>) -> Router {

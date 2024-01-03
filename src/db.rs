@@ -1,5 +1,4 @@
 use async_recursion::async_recursion;
-use chrono::DateTime;
 use chrono::Utc;
 use sqlx::Pool;
 use sqlx::Sqlite;
@@ -9,9 +8,10 @@ use crate::models::step::Step;
 use crate::models::tag::Tag;
 use crate::models::test_case::TestCase;
 use crate::models::test_case::TestCaseWithSteps;
+use anyhow::Result;
 
-pub async fn get_step_data_uri(id: i64, db: &Pool<Sqlite>) -> String {
-    sqlx::query!(
+pub async fn get_step_data_uri(id: i64, db: &Pool<Sqlite>) -> Result<String> {
+    Ok(sqlx::query!(
         "
     SELECT data_uri
     FROM step
@@ -21,8 +21,7 @@ pub async fn get_step_data_uri(id: i64, db: &Pool<Sqlite>) -> String {
     )
     .map(|row| row.data_uri)
     .fetch_one(db)
-    .await
-    .unwrap()
+    .await?)
 }
 
 #[async_recursion]
@@ -30,7 +29,7 @@ pub async fn get_steps(
     db: &Pool<Sqlite>,
     left_test_case: i64,
     parent_step_id: Option<i64>,
-) -> Vec<Step> {
+) -> Result<Vec<Step>> {
     let mut steps = sqlx::query!(
         "
     SELECT *
@@ -40,27 +39,30 @@ pub async fn get_steps(
         left_test_case,
         parent_step_id
     )
-    .map(|row| Step {
-        id: row.id,
-        name: row.name,
-        data_uri: row.data_uri,
-        created_at: row.created_at.parse().unwrap(),
-        test_case_id: row.test_case_id,
-        children_steps: vec![],
-    })
     .fetch_all(db)
-    .await
-    .unwrap();
+    .await?
+    .into_iter()
+    .map(|row| {
+        Ok(Step {
+            id: row.id,
+            name: row.name,
+            data_uri: row.data_uri,
+            created_at: row.created_at.parse()?,
+            test_case_id: row.test_case_id,
+            children_steps: vec![],
+        })
+    })
+    .collect::<Result<Vec<_>>>()?;
 
     for step in steps.iter_mut() {
-        step.children_steps = get_steps(db, left_test_case, step.id.into()).await;
+        step.children_steps = get_steps(db, left_test_case, step.id.into()).await?;
     }
 
-    steps
+    Ok(steps)
 }
 
-pub async fn get_run_test_cases(db: &Pool<Sqlite>, run_id: i64) -> Vec<TestCase> {
-    sqlx::query!(
+pub async fn get_run_test_cases(db: &Pool<Sqlite>, run_id: i64) -> Result<Vec<TestCase>> {
+    let vec = sqlx::query!(
         "
     SELECT *
     FROM test_case
@@ -68,19 +70,26 @@ pub async fn get_run_test_cases(db: &Pool<Sqlite>, run_id: i64) -> Vec<TestCase>
         ",
         run_id
     )
-    .map(|row| TestCase {
-        id: row.id,
-        run_id: row.run_id,
-        name: row.name,
-        created_at: row.created_at.parse().unwrap(),
-    })
     .fetch_all(db)
-    .await
-    .unwrap()
+    .await?
+    .into_iter()
+    .map(|row| {
+        Ok(TestCase {
+            id: row.id,
+            run_id: row.run_id,
+            name: row.name,
+            created_at: row.created_at.parse()?,
+        })
+    })
+    .collect::<Result<Vec<_>>>()?;
+    Ok(vec)
 }
 
-pub async fn get_case_with_steps(db: &Pool<Sqlite>, test_case_id: i64) -> TestCaseWithSteps {
-    let steps = get_steps(db, test_case_id, None).await;
+pub async fn get_case_with_steps(
+    db: &Pool<Sqlite>,
+    test_case_id: i64,
+) -> Result<TestCaseWithSteps> {
+    let steps = get_steps(db, test_case_id, None).await?;
 
     let row = sqlx::query!(
         "
@@ -91,19 +100,18 @@ pub async fn get_case_with_steps(db: &Pool<Sqlite>, test_case_id: i64) -> TestCa
         test_case_id
     )
     .fetch_one(db)
-    .await
-    .unwrap();
+    .await?;
 
-    TestCaseWithSteps {
+    Ok(TestCaseWithSteps {
         id: row.id,
         run_id: row.run_id,
         name: row.name,
-        created_at: row.created_at.parse().unwrap(),
+        created_at: row.created_at.parse()?,
         steps,
-    }
+    })
 }
 
-pub async fn get_runs(db: Pool<Sqlite>) -> Vec<Run> {
+pub async fn get_runs(db: Pool<Sqlite>) -> Result<Vec<Run>> {
     let mut runs = vec![];
 
     let runs_untagged = sqlx::query!(
@@ -113,8 +121,7 @@ pub async fn get_runs(db: Pool<Sqlite>) -> Vec<Run> {
             ",
     )
     .fetch_all(&db)
-    .await
-    .unwrap();
+    .await?;
 
     for run in runs_untagged.into_iter() {
         let tags = sqlx::query!(
@@ -131,22 +138,23 @@ pub async fn get_runs(db: Pool<Sqlite>) -> Vec<Run> {
             value: row.value,
         })
         .fetch_all(&db)
-        .await
-        .unwrap();
+        .await?;
 
         runs.push(Run {
             id: run.id,
             name: run.name,
-            created_at: run.created_at.parse().unwrap(),
+            created_at: run.created_at.parse()?,
             tags,
         })
     }
-    runs
+    Ok(runs)
 }
 
-// 2024-01-03T10:37:39.545814633Z
-// 2023-10-11T12:00:00.545814633Z
-pub async fn insert_and_get_run(db: &Pool<Sqlite>, name: &str, tag_values: &[String]) -> Run {
+pub async fn insert_and_get_run(
+    db: &Pool<Sqlite>,
+    name: &str,
+    tag_values: &[String],
+) -> Result<Run> {
     let now = Utc::now().to_string();
 
     sqlx::query!(
@@ -170,12 +178,11 @@ pub async fn insert_and_get_run(db: &Pool<Sqlite>, name: &str, tag_values: &[Str
         name,
     )
     .fetch_one(db)
-    .await
-    .unwrap();
+    .await?;
 
     let mut tags = vec![];
     for tag in tag_values {
-        let tag = insert_and_get_tag(db, tag).await;
+        let tag = insert_and_get_tag(db, tag).await?;
 
         sqlx::query!(
             "
@@ -192,15 +199,15 @@ pub async fn insert_and_get_run(db: &Pool<Sqlite>, name: &str, tag_values: &[Str
         tags.push(tag);
     }
 
-    Run {
+    Ok(Run {
         id: run.id,
         name: run.name,
-        created_at: run.created_at.parse().unwrap(),
+        created_at: run.created_at.parse()?,
         tags,
-    }
+    })
 }
 
-pub async fn insert_and_get_tag(db: &Pool<Sqlite>, tag: &str) -> Tag {
+pub async fn insert_and_get_tag(db: &Pool<Sqlite>, tag: &str) -> Result<Tag> {
     sqlx::query!(
         "
     INSERT INTO tag(value)
@@ -212,7 +219,7 @@ pub async fn insert_and_get_tag(db: &Pool<Sqlite>, tag: &str) -> Tag {
     .await
     .ok();
 
-    sqlx::query!(
+    Ok(sqlx::query!(
         "
     SELECT *
     FROM tag
@@ -225,11 +232,14 @@ pub async fn insert_and_get_tag(db: &Pool<Sqlite>, tag: &str) -> Tag {
         value: row.value,
     })
     .fetch_one(db)
-    .await
-    .unwrap()
+    .await?)
 }
 
-pub async fn insert_and_get_test_case(db: &Pool<Sqlite>, run_id: i64, name: &str) -> TestCase {
+pub async fn insert_and_get_test_case(
+    db: &Pool<Sqlite>,
+    run_id: i64,
+    name: &str,
+) -> Result<TestCase> {
     let now = Utc::now().to_string();
 
     sqlx::query!(
@@ -255,15 +265,14 @@ pub async fn insert_and_get_test_case(db: &Pool<Sqlite>, run_id: i64, name: &str
         run_id
     )
     .fetch_one(db)
-    .await
-    .unwrap();
+    .await?;
 
-    TestCase {
+    Ok(TestCase {
         id: test_case.id,
         run_id,
         name: test_case.name,
-        created_at: test_case.created_at.parse().unwrap(),
-    }
+        created_at: test_case.created_at.parse()?,
+    })
 }
 
 pub async fn insert_and_get_step(
@@ -272,7 +281,7 @@ pub async fn insert_and_get_step(
     name: &str,
     img_base64_url: &str,
     parent_step_id: Option<i64>,
-) -> Step {
+) -> Result<Step> {
     let now = Utc::now().to_string();
 
     sqlx::query!(
@@ -300,17 +309,16 @@ pub async fn insert_and_get_step(
         test_case_id
     )
     .fetch_one(db)
-    .await
-    .unwrap();
+    .await?;
 
-    let children_steps = get_steps(db, test_case_id, step.id.into()).await;
+    let children_steps = get_steps(db, test_case_id, step.id.into()).await?;
 
-    Step {
+    Ok(Step {
         id: step.id,
         name: step.name,
         test_case_id,
         data_uri: step.data_uri,
-        created_at: step.created_at.parse().unwrap(),
+        created_at: step.created_at.parse()?,
         children_steps,
-    }
+    })
 }

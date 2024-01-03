@@ -2,6 +2,7 @@ pub mod components;
 
 use std::collections::BTreeMap;
 
+use anyhow::Result;
 use askama::Template;
 use axum::extract::Query;
 use axum::extract::State;
@@ -12,6 +13,7 @@ use serde::Deserialize;
 use sqlx::Pool;
 use sqlx::Sqlite;
 
+use crate::error::HttpResult;
 use crate::models::side::Side;
 
 use self::components::choose_a_run;
@@ -34,14 +36,15 @@ async fn side(
     all_query_params: BTreeMap<String, String>,
     side: Side,
     run_id: Option<i64>,
-) -> String {
+) -> Result<String> {
     if let Some(run_id) = run_id {
-        format!("{run_id}")
+        Ok(format!("{run_id}"))
     } else {
-        choose_a_run::TemplateInstance::new(db, side, all_query_params)
-            .await
-            .render()
-            .unwrap()
+        Ok(
+            choose_a_run::TemplateInstance::new(db, side, all_query_params)
+                .await?
+                .render()?,
+        )
     }
 }
 
@@ -52,10 +55,10 @@ async fn html(
         left_run,
         right_run,
     }): Query<QueryParams>,
-) -> Html<String> {
-    let left = side(db.clone(), all_qp.clone(), Side::Left, left_run).await;
-    let right = side(db.clone(), all_qp.clone(), Side::Right, right_run).await;
-    Html(TemplateInstance { left, right }.render().unwrap())
+) -> HttpResult<Html<String>> {
+    let left = side(db.clone(), all_qp.clone(), Side::Left, left_run).await?;
+    let right = side(db.clone(), all_qp.clone(), Side::Right, right_run).await?;
+    Ok(Html(TemplateInstance { left, right }.render()?))
 }
 
 pub fn router(db: Pool<Sqlite>) -> Router {

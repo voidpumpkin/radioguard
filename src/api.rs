@@ -16,6 +16,7 @@ use crate::db::get_step_data_uri;
 use crate::db::insert_and_get_run;
 use crate::db::insert_and_get_step;
 use crate::db::insert_and_get_test_case;
+use crate::error::HttpResult;
 use crate::services::compare_steps;
 
 #[derive(Debug, Serialize)]
@@ -26,29 +27,26 @@ struct Comparison {
 async fn diff_steps_by_image(
     State(db): State<Pool<Sqlite>>,
     Path(path): Path<(Option<i64>, Option<i64>)>,
-) -> (HeaderMap, impl IntoResponse) {
+) -> HttpResult<(HeaderMap, impl IntoResponse)> {
     let mut headers = HeaderMap::new();
-    headers.insert(
-        header::CACHE_CONTROL,
-        "public, max-age=31557600".parse().unwrap(),
-    );
+    headers.insert(header::CACHE_CONTROL, "public, max-age=31557600".parse()?);
 
     let (Some(left_step_id), Some(right_step_id)) = path else {
-        return (
+        return Ok((
             headers,
             Json(Comparison {
                 contains_changes: false,
             }),
-        );
+        ));
     };
 
-    let left_data_uri = get_step_data_uri(left_step_id, &db).await;
-    let right_data_uri = get_step_data_uri(right_step_id, &db).await;
+    let left_data_uri = get_step_data_uri(left_step_id, &db).await?;
+    let right_data_uri = get_step_data_uri(right_step_id, &db).await?;
 
     let (contains_changes, _diff_img_data_uri) =
-        compare_steps(left_data_uri.as_str(), right_data_uri.as_str()).await;
+        compare_steps(left_data_uri.as_str(), right_data_uri.as_str()).await?;
 
-    (headers, Json(Comparison { contains_changes }))
+    Ok((headers, Json(Comparison { contains_changes })))
 }
 
 async fn post_run() {
@@ -75,7 +73,6 @@ pub struct PostStepResBody {
     pub step_id: Option<i64>,
 }
 
-// TODO make it impossible to fail
 async fn post_step(
     State(db): State<Pool<Sqlite>>,
     Json(body): Json<PostStepReqBody>,
@@ -89,18 +86,35 @@ async fn post_step(
         parent_step_id,
     } = body;
 
-    dbg!(&step_name);
-
-    let run = insert_and_get_run(&db, &run_id, &run_tags).await;
-    let test_case = insert_and_get_test_case(&db, run.id, &test_case_name).await;
-    let step = insert_and_get_step(
+    let run = match insert_and_get_run(&db, &run_id, &run_tags).await {
+        Ok(run) => run,
+        Err(err) => {
+            log::error!("{err}");
+            return Json(PostStepResBody { step_id: None });
+        }
+    };
+    let test_case = match insert_and_get_test_case(&db, run.id, &test_case_name).await {
+        Ok(test_case) => test_case,
+        Err(err) => {
+            log::error!("{err}");
+            return Json(PostStepResBody { step_id: None });
+        }
+    };
+    let step = match insert_and_get_step(
         &db,
         test_case.id,
         &step_name,
         &img_base64_url,
         parent_step_id,
     )
-    .await;
+    .await
+    {
+        Ok(step) => step,
+        Err(err) => {
+            log::error!("{err}");
+            return Json(PostStepResBody { step_id: None });
+        }
+    };
 
     Json(PostStepResBody {
         step_id: Some(step.id),

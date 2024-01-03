@@ -11,6 +11,7 @@ use sqlx::Pool;
 use sqlx::Sqlite;
 
 use crate::db::get_step_data_uri;
+use crate::error::HttpResult;
 use crate::models::side::Side;
 use crate::services::compare_steps;
 
@@ -27,10 +28,13 @@ struct ListItem {
     img_css: String,
 }
 
-async fn html_single(State(db): State<Pool<Sqlite>>, Path(step_id): Path<i64>) -> Html<String> {
-    let data_uri = get_step_data_uri(step_id, &db).await;
+async fn html_single(
+    State(db): State<Pool<Sqlite>>,
+    Path(step_id): Path<i64>,
+) -> HttpResult<Html<String>> {
+    let data_uri = get_step_data_uri(step_id, &db).await?;
 
-    Html(
+    Ok(Html(
         TemplateInstance {
             list: vec![ListItem {
                 unique_id: "single".to_string(),
@@ -39,25 +43,21 @@ async fn html_single(State(db): State<Pool<Sqlite>>, Path(step_id): Path<i64>) -
                 img_css: "".to_string(),
             }],
         }
-        .render()
-        .unwrap(),
-    )
+        .render()?,
+    ))
 }
 
 async fn html_diff(
     State(db): State<Pool<Sqlite>>,
     Path((left_step_id, right_step_id)): Path<(i64, i64)>,
-) -> (HeaderMap, impl IntoResponse) {
+) -> HttpResult<(HeaderMap, impl IntoResponse)> {
     let mut headers = HeaderMap::new();
-    headers.insert(
-        header::CACHE_CONTROL,
-        "public, max-age=31557600".parse().unwrap(),
-    );
+    headers.insert(header::CACHE_CONTROL, "public, max-age=31557600".parse()?);
 
-    let left_data_uri = get_step_data_uri(left_step_id, &db).await;
-    let right_data_uri = get_step_data_uri(right_step_id, &db).await;
+    let left_data_uri = get_step_data_uri(left_step_id, &db).await?;
+    let right_data_uri = get_step_data_uri(right_step_id, &db).await?;
     let (contains_changes, diff_data_uri) =
-        compare_steps(left_data_uri.as_str(), right_data_uri.as_str()).await;
+        compare_steps(left_data_uri.as_str(), right_data_uri.as_str()).await?;
 
     let mut list = vec![];
     list.push(ListItem {
@@ -80,7 +80,7 @@ async fn html_diff(
         cta: "👉".to_string(),
         img_css: "".to_string(),
     });
-    (headers, Html(TemplateInstance { list }.render().unwrap()))
+    Ok((headers, Html(TemplateInstance { list }.render()?)))
 }
 
 pub fn router(db: Pool<Sqlite>) -> Router {
